@@ -18,6 +18,8 @@ The database is **finished**. What's left is the backend and the web pages.
 | `app_starter.py` | A working FastAPI app with one page done. Copy the pattern. |
 | `queries.sql` | Ready-made SQL for every page. Copy these, don't write your own. |
 | `join-walkthrough.html` | Explains how the SQL joins work. Open it in a browser. |
+| `erd.png` / `erd.svg` | The diagram below. Regenerate with `dot -Tpng -Gdpi=150 erd.dot -o erd.png` |
+| `erd.dot` / `erd.dbml` | Diagram sources. `.dbml` pastes into dbdiagram.io |
 
 **Do not edit `schema.sql` or `seed.sql`.** If you think something is missing
 from the database, message Mohamed. Changing them breaks everyone else.
@@ -110,12 +112,10 @@ Open <http://127.0.0.1:8000/docs> — auto-generated API documentation.
 
 Five tables, 55 rows.
 
-```
-trade ──┐
-        ├── shop_trade ──── shop ──── branch ──── employee
-        ┘                  (8)        (13)        (17)
-       (7)      (10)
-```
+![Entity-relationship diagram](erd.png)
+
+The crow's foot marks the "many" end: **one** shop has **many** branches, **one**
+branch employs **many** people.
 
 - **`trade`** — the 7 categories
 - **`shop`** — the businesses. Name, commercial register, bank account,

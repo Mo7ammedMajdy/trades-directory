@@ -1,0 +1,73 @@
+// Entity-Relationship Diagram — Trades Directory
+//
+// Regenerate after changing schema.sql:
+//     dot -Tsvg erd.dot -o erd.svg
+//     dot -Tpng -Gdpi=150 erd.dot -o erd.png
+
+digraph trades_directory {
+  rankdir=LR;
+  splines=spline;
+  nodesep=0.55;
+  ranksep=1.5;
+  bgcolor="white";
+  node [shape=plaintext, fontname="Helvetica", fontsize=11];
+  edge [color="#39485c", penwidth=1.2, arrowsize=0.9];
+
+  trade [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#b9c2d0">
+      <TR><TD COLSPAN="2" BGCOLOR="#1b4d8f"><FONT COLOR="#ffffff" POINT-SIZE="13"><B>trade</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT"><B>id</B></TD><TD PORT="id" ALIGN="LEFT"><FONT COLOR="#5b6472">serial &#183; PK</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">name_en</TD><TD ALIGN="LEFT"><FONT COLOR="#5b6472">text &#183; NOT NULL &#183; UNIQUE</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">name_ar</TD><TD ALIGN="LEFT"><FONT COLOR="#5b6472">text &#183; NOT NULL &#183; UNIQUE</FONT></TD></TR>
+    </TABLE>>];
+
+  shop_trade [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#b9c2d0">
+      <TR><TD COLSPAN="2" BGCOLOR="#8a6010"><FONT COLOR="#ffffff" POINT-SIZE="13"><B>shop_trade</B></FONT></TD></TR>
+      <TR><TD PORT="shop_id" ALIGN="LEFT"><B>shop_id</B></TD><TD ALIGN="LEFT"><FONT COLOR="#5b6472">int &#183; PK &#183; FK &#8594; shop</FONT></TD></TR>
+      <TR><TD PORT="trade_id" ALIGN="LEFT"><B>trade_id</B></TD><TD ALIGN="LEFT"><FONT COLOR="#5b6472">int &#183; PK &#183; FK &#8594; trade</FONT></TD></TR>
+      <TR><TD COLSPAN="2" ALIGN="LEFT"><FONT COLOR="#8a6010" POINT-SIZE="10"><I>composite PK (shop_id, trade_id)</I></FONT></TD></TR>
+    </TABLE>>];
+
+  shop [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#b9c2d0">
+      <TR><TD COLSPAN="2" BGCOLOR="#1b4d8f"><FONT COLOR="#ffffff" POINT-SIZE="13"><B>shop</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT"><B>id</B></TD><TD PORT="id" ALIGN="LEFT"><FONT COLOR="#5b6472">serial &#183; PK</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">name_ar</TD><TD ALIGN="LEFT"><FONT COLOR="#5b6472">text &#183; NOT NULL</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">name_en</TD><TD ALIGN="LEFT"><FONT COLOR="#5b6472">text</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">commercial_register</TD><TD ALIGN="LEFT"><FONT COLOR="#5b6472">text &#183; UNIQUE</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">bank_account</TD><TD ALIGN="LEFT"><FONT COLOR="#5b6472">text</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">technical_capacity</TD><TD ALIGN="LEFT"><FONT COLOR="#5b6472">text</FONT></TD></TR>
+    </TABLE>>];
+
+  branch [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#b9c2d0">
+      <TR><TD COLSPAN="2" BGCOLOR="#1b4d8f"><FONT COLOR="#ffffff" POINT-SIZE="13"><B>branch</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT"><B>id</B></TD><TD PORT="id" ALIGN="LEFT"><FONT COLOR="#5b6472">serial &#183; PK</FONT></TD></TR>
+      <TR><TD PORT="shop_id" ALIGN="LEFT">shop_id</TD><TD ALIGN="LEFT"><FONT COLOR="#5b6472">int &#183; NOT NULL &#183; FK &#8594; shop</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">address</TD><TD ALIGN="LEFT"><FONT COLOR="#5b6472">text &#183; NOT NULL</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">branch_name</TD><TD ALIGN="LEFT"><FONT COLOR="#5b6472">text</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">phone_number</TD><TD ALIGN="LEFT"><FONT COLOR="#5b6472">varchar(15) &#183; NOT NULL &#183; CHECK</FONT></TD></TR>
+    </TABLE>>];
+
+  employee [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#b9c2d0">
+      <TR><TD COLSPAN="2" BGCOLOR="#1b4d8f"><FONT COLOR="#ffffff" POINT-SIZE="13"><B>employee</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT"><B>id</B></TD><TD PORT="id" ALIGN="LEFT"><FONT COLOR="#5b6472">serial &#183; PK</FONT></TD></TR>
+      <TR><TD PORT="branch_id" ALIGN="LEFT">branch_id</TD><TD ALIGN="LEFT"><FONT COLOR="#5b6472">int &#183; NOT NULL &#183; FK &#8594; branch</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">name_ar</TD><TD ALIGN="LEFT"><FONT COLOR="#5b6472">text &#183; NOT NULL</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">name_en</TD><TD ALIGN="LEFT"><FONT COLOR="#5b6472">text</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">national_id</TD><TD ALIGN="LEFT"><FONT COLOR="#5b6472">text &#183; UNIQUE &#183; CHECK</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">phone_number</TD><TD ALIGN="LEFT"><FONT COLOR="#5b6472">varchar(15) &#183; NOT NULL &#183; CHECK</FONT></TD></TR>
+    </TABLE>>];
+
+  // one ──┼──< many     tee = exactly one, crow = many
+  trade:id:e -> shop_trade:trade_id:w [dir=both, arrowtail=tee, arrowhead=crow,
+              label="  is worked by  ", fontsize=9, fontcolor="#5b6472"];
+  shop:id:e  -> shop_trade:shop_id:w  [dir=both, arrowtail=tee, arrowhead=crow,
+              label="  works in  ", fontsize=9, fontcolor="#5b6472"];
+  shop:id:e  -> branch:shop_id:w      [dir=both, arrowtail=tee, arrowhead=crow,
+              label="  has  ", fontsize=9, fontcolor="#5b6472"];
+  branch:id:e -> employee:branch_id:w [dir=both, arrowtail=tee, arrowhead=crow,
+              label="  employs  ", fontsize=9, fontcolor="#5b6472"];
+}
