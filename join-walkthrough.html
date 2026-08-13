@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Joining Shops to Trades</title>
+
+<style>
+  :root {
+    --ground:    #fcfcfd;
+    --surface:   #eef1f6;
+    --surface-2: #e3e8f0;
+    --line:      #cdd5e1;
+    --ink:       #161b24;
+    --muted:     #5b6472;
+    --lapis:     #1b4d8f;
+    --lapis-soft:#dce7f6;
+    --gold:      #9a6c14;
+    --gold-soft: #f5e9cf;
+    --measure:   min(100%, 50rem);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:    #0f131a;
+      --surface:   #171d27;
+      --surface-2: #1f2733;
+      --line:      #303b4a;
+      --ink:       #e5e9f0;
+      --muted:     #8a94a6;
+      --lapis:     #7db0f0;
+      --lapis-soft:#17293f;
+      --gold:      #dcae55;
+      --gold-soft: #33280f;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:    #0f131a;
+    --surface:   #171d27;
+    --surface-2: #1f2733;
+    --line:      #303b4a;
+    --ink:       #e5e9f0;
+    --muted:     #8a94a6;
+    --lapis:     #7db0f0;
+    --lapis-soft:#17293f;
+    --gold:      #dcae55;
+    --gold-soft: #33280f;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0;
+    padding: 3rem 1.25rem 6rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2.5rem;
+  }
+
+  .col { width: var(--measure); display: flex; flex-direction: column; gap: 1.1rem; }
+  .col > * { margin: 0; }
+
+  h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(2rem, 5vw, 2.9rem);
+    font-weight: 400;
+    line-height: 1.12;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  h2 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.5rem;
+    font-weight: 400;
+    line-height: 1.25;
+    text-wrap: balance;
+    padding-top: 1.75rem;
+    border-top: 1px solid var(--line);
+  }
+
+  h3 {
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--muted);
+  }
+
+  .lede { font-size: 1.13rem; color: var(--muted); text-wrap: pretty; }
+
+  code, pre, .mono, td.num { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  code { font-size: 0.9em; background: var(--surface); padding: 0.12em 0.36em; border-radius: 3px; }
+
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--lapis);
+    border-radius: 4px;
+    padding: 1rem 1.15rem;
+    overflow-x: auto;
+    font-size: 0.88rem;
+    line-height: 1.65;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  .kw   { color: var(--lapis); font-weight: 600; }
+  .lit  { color: var(--gold); }
+
+  figure {
+    margin: 0.5rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+  .scroller { overflow-x: auto; }
+  figure svg { display: block; max-width: 100%; height: auto; color: var(--ink); }
+  figcaption { font-size: 0.87rem; color: var(--muted); line-height: 1.5; }
+
+  .step {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding: 1.4rem 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+  }
+  .step-head { display: flex; align-items: baseline; gap: 0.85rem; }
+  .step-num {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--lapis);
+    background: var(--lapis-soft);
+    border-radius: 3px;
+    padding: 0.2rem 0.5rem;
+    flex: none;
+  }
+  .step-head h4 {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 1.02rem;
+    font-weight: 600;
+  }
+  .step p { margin: 0; }
+  .rowcount {
+    font-size: 0.85rem;
+    color: var(--muted);
+    border-top: 1px dashed var(--line);
+    padding-top: 0.7rem;
+  }
+  .rowcount b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-weight: 600; }
+  td.num { font-variant-numeric: tabular-nums; }
+  tbody tr:last-child td { border-bottom: none; }
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 5px; }
+
+  .note {
+    background: var(--gold-soft);
+    border-left: 3px solid var(--gold);
+    border-radius: 0 4px 4px 0;
+    padding: 0.95rem 1.15rem;
+    font-size: 0.94rem;
+  }
+  .note strong { color: var(--gold); }
+
+  :focus-visible { outline: 2px solid var(--lapis); outline-offset: 2px; }
+</style>
+</head>
+<body>
+
+<div class="col">
+  <h1>Joining Shops to Trades</h1>
+  <p class="lede">A single query touches three tables in <code>trades_db</code> and turns 8 shops into 10 rows, then 2. Here is what each keyword does, in the order the database actually does it.</p>
+</div>
+
+<div class="col">
+  <h3>The query being traced</h3>
+  <pre><code><span class="kw">SELECT</span>  s.name_ar <span class="kw">AS</span> shop, t.name_ar <span class="kw">AS</span> trade
+<span class="kw">FROM</span>    shop s
+<span class="kw">JOIN</span>    shop_trade st <span class="kw">ON</span> st.shop_id = s.id
+<span class="kw">JOIN</span>    trade t      <span class="kw">ON</span> t.id = st.trade_id
+<span class="kw">WHERE</span>   s.commercial_register <span class="kw">IS NULL</span>
+<span class="kw">ORDER BY</span> s.id;</code></pre>
+  <p>It answers: <em>which informal tradesmen — the ones with no commercial register — are in the directory, and what trade does each work in?</em></p>
+</div>
+
+<div class="col">
+  <h2>The order you write it is not the order it runs</h2>
+  <p>This is the single fact that makes everything else make sense. <code>SELECT</code> is written first and executed <em>last</em>. The database has to assemble and filter the rows before it can know which columns to hand back.</p>
+
+  <figure>
+    <div class="scroller">
+      <svg viewBox="0 0 640 330" role="img" aria-label="Diagram showing that SQL is written in the order SELECT, FROM, JOIN, JOIN, WHERE but executed in the order FROM, JOIN, JOIN, WHERE, SELECT, with the SELECT line crossing from top to bottom.">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+          </marker>
+          <marker id="arg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--gold)"/>
+          </marker>
+        </defs>
+
+        <text x="110" y="22" text-anchor="middle" font-size="11" font-weight="600" letter-spacing="0.08em" fill="var(--muted)">AS WRITTEN</text>
+        <text x="530" y="22" text-anchor="middle" font-size="11" font-weight="600" letter-spacing="0.08em" fill="var(--muted)">AS EXECUTED</text>
+
+        <g fill="var(--surface-2)" stroke="var(--line)">
+          <rect x="30" y="40" width="160" height="34" rx="3"/>
+          <rect x="30" y="98" width="160" height="34" rx="3"/>
+          <rect x="30" y="156" width="160" height="34" rx="3"/>
+          <rect x="30" y="214" width="160" height="34" rx="3"/>
+          <rect x="30" y="272" width="160" height="34" rx="3"/>
+          <rect x="450" y="40" width="160" height="34" rx="3"/>
+          <rect x="450" y="98" width="160" height="34" rx="3"/>
+          <rect x="450" y="156" width="160" height="34" rx="3"/>
+          <rect x="450" y="214" width="160" height="34" rx="3"/>
+        </g>
+        <rect x="450" y="272" width="160" height="34" rx="3" fill="var(--gold-soft)" stroke="var(--gold)"/>
+        <rect x="30" y="40" width="160" height="34" rx="3" fill="var(--gold-soft)" stroke="var(--gold)"/>
+
+        <g font-size="12.5" font-family="ui-monospace, Menlo, monospace" text-anchor="middle" fill="currentColor">
+          <text x="110" y="62">SELECT</text>
+          <text x="110" y="120">FROM</text>
+          <text x="110" y="178">JOIN shop_trade</text>
+          <text x="110" y="236">JOIN trade</text>
+          <text x="110" y="294">WHERE</text>
+          <text x="530" y="62">FROM</text>
+          <text x="530" y="120">JOIN shop_trade</text>
+          <text x="530" y="178">JOIN trade</text>
+          <text x="530" y="236">WHERE</text>
+          <text x="530" y="294">SELECT</text>
+        </g>
+
+        <g stroke="currentColor" stroke-width="1.2" fill="none" opacity="0.5" marker-end="url(#ar)">
+          <path d="M 190 115 C 300 115, 340 57, 448 57"/>
+          <path d="M 190 173 C 300 173, 340 115, 448 115"/>
+          <path d="M 190 231 C 300 231, 340 173, 448 173"/>
+          <path d="M 190 289 C 300 289, 340 231, 448 231"/>
+        </g>
+        <path d="M 190 57 C 320 57, 320 289, 448 289" stroke="var(--gold)" stroke-width="2" fill="none" marker-end="url(#arg)"/>
+      </svg>
+    </div>
+    <figcaption>Every clause moves up one place; <code>SELECT</code> falls from first to last. That crossing gold line is why a name you invent in <code>SELECT</code> cannot be used in <code>WHERE</code> — at the moment <code>WHERE</code> runs, the <code>SELECT</code> list does not exist yet.</figcaption>
+  </figure>
+</div>
+
+<div class="col">
+  <h2>Step by step</h2>
+  <p>These are numbered in execution order, not the order they appear in the query.</p>
+
+  <div class="step">
+    <div class="step-head"><span class="step-num">01</span><h4>FROM shop s</h4></div>
+    <p>Load the starting table. <code>s</code> is an <strong>alias</strong> — a nickname, so the rest of the query can say <code>s.id</code> instead of <code>shop.id</code>. It exists purely to keep the query short.</p>
+    <p class="rowcount">Rows in hand: <b>8</b> — every shop.</p>
+  </div>
+
+  <div class="step">
+    <div class="step-head"><span class="step-num">02</span><h4>JOIN shop_trade st ON st.shop_id = s.id</h4></div>
+    <p>For each shop, find every <code>shop_trade</code> row whose <code>shop_id</code> matches that shop's <code>id</code>. Glue the two rows together side by side.</p>
+    <p>Seven shops match exactly one link row, so they pass through unchanged. <strong>الإتقان matches three</strong>, so it comes out three times — once per trade it works in. This is the many-to-many being unpacked, and the row count rising is the proof it happened.</p>
+    <p class="rowcount">Rows in hand: <b>10</b> — up from 8.</p>
+  </div>
+
+  <figure>
+    <div class="scroller">
+      <svg viewBox="0 0 620 480" role="img" aria-label="Diagram showing 8 shop rows on the left connecting to 10 shop_trade link rows on the right. Shops 1 through 7 each connect to one link row; shop 8 connects to three, shown in gold.">
+        <text x="110" y="20" text-anchor="middle" font-size="11" font-weight="600" letter-spacing="0.08em" fill="var(--muted)">shop</text>
+        <text x="470" y="20" text-anchor="middle" font-size="11" font-weight="600" letter-spacing="0.08em" fill="var(--muted)">shop_trade</text>
+
+        <g fill="var(--surface-2)" stroke="var(--line)">
+          <rect x="20" y="40"  width="180" height="36" rx="3"/>
+          <rect x="20" y="92"  width="180" height="36" rx="3"/>
+          <rect x="20" y="144" width="180" height="36" rx="3"/>
+          <rect x="20" y="196" width="180" height="36" rx="3"/>
+          <rect x="20" y="248" width="180" height="36" rx="3"/>
+          <rect x="20" y="300" width="180" height="36" rx="3"/>
+          <rect x="20" y="352" width="180" height="36" rx="3"/>
+        </g>
+        <rect x="20" y="404" width="180" height="36" rx="3" fill="var(--gold-soft)" stroke="var(--gold)"/>
+
+        <g font-size="12" font-family="ui-monospace, Menlo, monospace" fill="currentColor">
+          <text x="34" y="63">1  النور</text>
+          <text x="34" y="115">2  الحرفي</text>
+          <text x="34" y="167">3  الشروق</text>
+          <text x="34" y="219">4  المهندس</text>
+          <text x="34" y="271">5  الأمانة</text>
+          <text x="34" y="323">6  عم سيد</text>
+          <text x="34" y="375">7  الفنان</text>
+          <text x="34" y="427">8  الإتقان</text>
+        </g>
+
+        <g fill="var(--surface-2)" stroke="var(--line)">
+          <rect x="400" y="30"  width="140" height="30" rx="3"/>
+          <rect x="400" y="72"  width="140" height="30" rx="3"/>
+          <rect x="400" y="114" width="140" height="30" rx="3"/>
+          <rect x="400" y="156" width="140" height="30" rx="3"/>
+          <rect x="400" y="198" width="140" height="30" rx="3"/>
+          <rect x="400" y="240" width="140" height="30" rx="3"/>
+          <rect x="400" y="282" width="140" height="30" rx="3"/>
+        </g>
+        <g fill="var(--gold-soft)" stroke="var(--gold)">
+          <rect x="400" y="324" width="140" height="30" rx="3"/>
+          <rect x="400" y="366" width="140" height="30" rx="3"/>
+          <rect x="400" y="408" width="140" height="30" rx="3"/>
+        </g>
+
+        <g font-size="12" font-family="ui-monospace, Menlo, monospace" text-anchor="middle" fill="currentColor">
+          <text x="470" y="50">(1, 1)</text>
+          <text x="470" y="92">(2, 2)</text>
+          <text x="470" y="134">(3, 3)</text>
+          <text x="470" y="176">(4, 4)</text>
+          <text x="470" y="218">(5, 5)</text>
+          <text x="470" y="260">(6, 6)</text>
+          <text x="470" y="302">(7, 7)</text>
+          <text x="470" y="344">(8, 1)</text>
+          <text x="470" y="386">(8, 3)</text>
+          <text x="470" y="428">(8, 5)</text>
+        </g>
+
+        <g stroke="currentColor" stroke-width="1.2" fill="none" opacity="0.45">
+          <path d="M 200 58  C 280 58,  320 45,  400 45"/>
+          <path d="M 200 110 C 280 110, 320 87,  400 87"/>
+          <path d="M 200 162 C 280 162, 320 129, 400 129"/>
+          <path d="M 200 214 C 280 214, 320 171, 400 171"/>
+          <path d="M 200 266 C 280 266, 320 213, 400 213"/>
+          <path d="M 200 318 C 280 318, 320 255, 400 255"/>
+          <path d="M 200 370 C 280 370, 320 297, 400 297"/>
+        </g>
+        <g stroke="var(--gold)" stroke-width="1.8" fill="none">
+          <path d="M 200 422 C 290 422, 320 339, 400 339"/>
+          <path d="M 200 422 C 290 422, 320 381, 400 381"/>
+          <path d="M 200 422 C 290 422, 320 423, 400 423"/>
+        </g>
+      </svg>
+    </div>
+    <figcaption>Eight shops on the left, ten link rows on the right. Shop 8 alone accounts for the extra two — one outgoing row per trade it works in. <code>ON</code> is the condition that decides which lines get drawn.</figcaption>
+  </figure>
+
+  <div class="step">
+    <div class="step-head"><span class="step-num">03</span><h4>JOIN trade t ON t.id = st.trade_id</h4></div>
+    <p>A second join, for the same reason. <code>shop</code> and <code>trade</code> have no column pointing at each other — <code>shop_trade</code> is the only path between them, so you cross it in two hops.</p>
+    <p>Every link row points at exactly one trade, so nothing multiplies here. Each row simply gains the trade's columns.</p>
+    <p class="rowcount">Rows in hand: <b>10</b> — unchanged. Columns: wider.</p>
+  </div>
+
+  <div class="step">
+    <div class="step-head"><span class="step-num">04</span><h4>WHERE s.commercial_register IS NULL</h4></div>
+    <p>Throw away every row that fails the test. Only shops 6 and 7 have no commercial register, and each works in one trade, so eight rows are discarded.</p>
+    <p>Because <code>WHERE</code> runs after both joins, it can filter on any column from any of the three tables — they are all present by this point.</p>
+    <p class="rowcount">Rows in hand: <b>2</b> — down from 10.</p>
+  </div>
+
+  <div class="step">
+    <div class="step-head"><span class="step-num">05</span><h4>SELECT s.name_ar AS shop, t.name_ar AS trade</h4></div>
+    <p>Finally, pick which columns come back and what to call them. <code>AS</code> renames a column in the output only — nothing in the database changes.</p>
+    <p>The rename matters here: both tables have a column called <code>name_ar</code>, so without <code>AS</code> you would get two columns with the same heading and no way to tell them apart.</p>
+    <p class="rowcount">Rows out: <b>2</b>. Columns out: <b>2</b>.</p>
+  </div>
+</div>
+
+<div class="col">
+  <h2>What happens to the row count</h2>
+  <figure>
+    <div class="scroller">
+      <svg viewBox="0 0 760 175" role="img" aria-label="Row counts across the five stages: FROM gives 8 rows, the first JOIN gives 10, the second JOIN stays at 10, WHERE drops to 2, and SELECT returns 2.">
+        <defs>
+          <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+          </marker>
+        </defs>
+
+        <g fill="var(--surface-2)" stroke="var(--line)">
+          <rect x="25"  y="42" width="110" height="58" rx="4"/>
+          <rect x="175" y="42" width="110" height="58" rx="4"/>
+          <rect x="325" y="42" width="110" height="58" rx="4"/>
+        </g>
+        <g fill="var(--gold-soft)" stroke="var(--gold)">
+          <rect x="475" y="42" width="110" height="58" rx="4"/>
+          <rect x="625" y="42" width="110" height="58" rx="4"/>
+        </g>
+
+        <g font-size="24" font-family="ui-monospace, Menlo, monospace" font-weight="600" text-anchor="middle" fill="currentColor">
+          <text x="80"  y="80">8</text>
+          <text x="230" y="80">10</text>
+          <text x="380" y="80">10</text>
+          <text x="530" y="80">2</text>
+          <text x="680" y="80">2</text>
+        </g>
+
+        <g font-size="11" font-family="ui-monospace, Menlo, monospace" text-anchor="middle" fill="var(--muted)">
+          <text x="80"  y="124">FROM</text>
+          <text x="230" y="124">JOIN st</text>
+          <text x="380" y="124">JOIN t</text>
+          <text x="530" y="124">WHERE</text>
+          <text x="680" y="124">SELECT</text>
+          <text x="80"  y="140">shop</text>
+          <text x="230" y="140">shop_trade</text>
+          <text x="380" y="140">trade</text>
+        </g>
+
+        <g stroke="currentColor" stroke-width="1.3" opacity="0.6" marker-end="url(#ar2)">
+          <line x1="137" y1="71" x2="171" y2="71"/>
+          <line x1="287" y1="71" x2="321" y2="71"/>
+          <line x1="437" y1="71" x2="471" y2="71"/>
+          <line x1="587" y1="71" x2="621" y2="71"/>
+        </g>
+
+        <g font-size="10.5" text-anchor="middle" fill="var(--muted)">
+          <text x="154" y="30">+2</text>
+          <text x="304" y="30">same</text>
+          <text x="454" y="30">−8</text>
+          <text x="604" y="30">cols only</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption>A join can grow the row count; a <code>WHERE</code> can only shrink it. If a query returns more rows than you expected, the join is where to look first.</figcaption>
+  </figure>
+</div>
+
+<div class="col">
+  <h2>What each keyword does</h2>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th>Syntax</th><th>Does</th><th>Runs</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="num">FROM shop s</td><td>Names the starting table and gives it the short alias <code>s</code></td><td class="num">1st</td></tr>
+        <tr><td class="num">JOIN … ON …</td><td>Attaches another table; <code>ON</code> states which rows count as a match</td><td class="num">2nd</td></tr>
+        <tr><td class="num">WHERE …</td><td>Discards rows that fail the test, after all joining is done</td><td class="num">3rd</td></tr>
+        <tr><td class="num">SELECT …</td><td>Chooses which columns come back</td><td class="num">4th</td></tr>
+        <tr><td class="num">AS name</td><td>Renames a column in the output only</td><td>with <code>SELECT</code></td></tr>
+        <tr><td class="num">ORDER BY …</td><td>Sorts the final result. Without it, row order is not guaranteed</td><td>last</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="col">
+  <h2>Two things that will catch you</h2>
+
+  <div class="note">
+    <p><strong>Never write <code>= NULL</code>.</strong> <code>NULL</code> means "unknown", and comparing anything to an unknown gives an unknown — not true, not false. So <code>WHERE commercial_register = NULL</code> matches nothing at all and raises no error, which is the worst combination. Use <code>IS NULL</code> and <code>IS NOT NULL</code>.</p>
+  </div>
+
+  <div class="note">
+    <p><strong>An alias from <code>SELECT</code> cannot be used in <code>WHERE</code>.</strong> Given <code>SELECT s.name_ar AS shop</code>, writing <code>WHERE shop = '…'</code> fails with <code>column "shop" does not exist</code>. Look back at the first diagram: <code>WHERE</code> ran before <code>SELECT</code>, so that name had not been invented yet. Repeat the real column instead.</p>
+  </div>
+</div>
+
+<div class="col">
+  <h2>The result</h2>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>shop</th><th>trade</th></tr></thead>
+      <tbody>
+        <tr><td dir="auto">عم سيد للأعمال المنزلية</td><td dir="auto">اعمال منزلية</td></tr>
+        <tr><td dir="auto">نقاشة الفنان</td><td dir="auto">نقاشة</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Two informal tradesmen, each with the trade they work in — assembled from three tables that each hold only one piece of the answer.</p>
+</div>
+
+</body>
+</html>
