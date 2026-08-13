@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ trade.name_ar }} — دليل الحرفيين</title>
+  <style>
+    body {
+      margin: 0 auto;
+      padding: 2rem 1rem;
+      max-width: 48rem;
+      font-family: system-ui, "Segoe UI", Tahoma, sans-serif;
+      line-height: 1.6;
+    }
+    ul { list-style: none; padding: 0; display: grid; gap: 0.75rem; }
+    li { padding: 1rem; border: 1px solid #d8dee8; border-radius: 6px; }
+    .details { color: #5b6472; }
+    .en { direction: ltr; unicode-bidi: isolate; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>محلات {{ trade.name_ar }}</h1>
+
+    {% if shops %}
+    <ul>
+      {% for shop in shops %}
+      <li>
+        <a href="/shops/{{ shop.id }}">{{ shop.name_ar }}</a>
+        <div class="details">
+          <span class="en">{{ shop.name_en or "—" }}</span>
+          <span>السجل التجاري: {{ shop.commercial_register or "—" }}</span>
+          <span>عدد الفروع: {{ shop.branch_count }}</span>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p>لا توجد محلات مسجلة في هذا البند.</p>
+    {% endif %}
+
+    <a href="/">العودة إلى البنود</a>
+  </main>
+</body>
+</html>
