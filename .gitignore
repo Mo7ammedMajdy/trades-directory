@@ -4,3 +4,4 @@ __pycache__/
 venv/
 .env
 *.log
+2026-*-for-some-reason*.txt
