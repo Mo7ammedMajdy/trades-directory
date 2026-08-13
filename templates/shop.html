@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ shop.name_ar }} — دليل الحرفيين</title>
+  <style>
+    body {
+      margin: 0 auto;
+      padding: 2rem 1rem;
+      max-width: 48rem;
+      font-family: system-ui, "Segoe UI", Tahoma, sans-serif;
+      line-height: 1.6;
+    }
+    h2 { margin-top: 2rem; }
+    dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.4rem 1rem; }
+    dt { font-weight: 600; }
+    dd { margin: 0; }
+    ul { padding-inline-start: 1.5rem; }
+    .branches { list-style: none; padding: 0; display: grid; gap: 0.75rem; }
+    .branches li { padding: 1rem; border: 1px solid #d8dee8; border-radius: 6px; }
+    .branch-details { margin: 0.35rem 0 0; color: #5b6472; }
+    .ltr { direction: ltr; unicode-bidi: isolate; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>{{ shop.name_ar }}</h1>
+
+    <dl>
+      <dt>الاسم بالإنجليزية</dt>
+      <dd class="ltr">{{ shop.name_en or "—" }}</dd>
+      <dt>السجل التجاري</dt>
+      <dd>{{ shop.commercial_register or "—" }}</dd>
+      <dt>الحساب البنكي</dt>
+      <dd class="ltr">{{ shop.bank_account or "—" }}</dd>
+      <dt>القدرة الفنية</dt>
+      <dd>{{ shop.technical_capacity or "—" }}</dd>
+    </dl>
+
+    <h2>البنود</h2>
+    {% if trades %}
+    <ul>
+      {% for trade in trades %}
+      <li>{{ trade.name_ar }}</li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p>لا توجد بنود مسجلة لهذا المحل.</p>
+    {% endif %}
+
+    <h2>الفروع</h2>
+    {% if branches %}
+    <ul class="branches">
+      {% for branch in branches %}
+      <li>
+        <strong>{{ branch.branch_name or "فرع " ~ branch.id }}</strong>
+        <p class="branch-details">
+          <span>{{ branch.address }}</span><br>
+          <span class="ltr">{{ branch.phone_number or "—" }}</span><br>
+          <span>عدد العاملين: {{ branch.staff_count }}</span>
+        </p>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p>لا توجد فروع مسجلة لهذا المحل.</p>
+    {% endif %}
+
+    <a href="/">العودة إلى البنود</a>
+  </main>
+</body>
+</html>
