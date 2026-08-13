@@ -83,6 +83,16 @@ Close any open `psql` window first, or `dropdb` will refuse.
 pip install "fastapi[standard]" "psycopg[binary]" jinja2
 ```
 
+**On Linux** this may fail with `error: externally-managed-environment`. That's
+normal — make a virtual environment first:
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install "fastapi[standard]" "psycopg[binary]" jinja2
+```
+
+Then run the app with `.venv/bin/fastapi dev app_starter.py` instead.
+
 ### 5. Run the starter app
 
 ```bash

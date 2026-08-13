@@ -96,8 +96,16 @@ def home(request: Request):
 #     if not trade:
 #         raise HTTPException(status_code=404, detail="Trade not found")
 #     return templates.TemplateResponse(
-#         "trade.html", {"request": request, "trade": trade[0], "shops": shops}
+#         request=request,
+#         name="trade.html",
+#         context={"trade": trade[0], "shops": shops},
 #     )
+#
+# NOTE: always call TemplateResponse with these three keyword arguments.
+# Older tutorials show TemplateResponse("page.html", {"request": request, ...}).
+# That form is removed in current versions and raises:
+#     TypeError: cannot use 'tuple' as a dict key
+# If you see that error, this is why.
 
 
 # ---------------------------------------------------------------------------
