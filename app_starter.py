@@ -1,8 +1,10 @@
 """
-Trades Directory — starter app.
+Trades Directory — the web app.
 
-Page 1 of 5 is finished. Copy its pattern for the other four.
-Every query you need is in ENDPOINTS.md and queries.sql.
+Public pages: the trade list, the shops in a trade, one shop in full, and the
+add-shop form. Admin pages (under /admin) add branches to a shop.
+
+Reference SQL lives in ENDPOINTS.md and queries.sql.
 
 Run it:
     pip install "fastapi[standard]" "psycopg[binary]" jinja2
@@ -63,7 +65,7 @@ def execute(sql, params=()):
 
 
 # ---------------------------------------------------------------------------
-# PAGE 1 of 5 — DONE. This is your template for the rest.
+# Public pages
 # ---------------------------------------------------------------------------
 @app.get("/")
 def home(request: Request):
@@ -73,12 +75,6 @@ def home(request: Request):
     )
 
 
-# ---------------------------------------------------------------------------
-# PAGE 2 of 5 — TODO (Wageh)
-#
-# Uncomment, then create templates/trade.html.
-# The SQL is in ENDPOINTS.md section 2.
-# ---------------------------------------------------------------------------
 @app.get("/trades/{trade_id}")
 def trade_detail(request: Request, trade_id: int):
     shops = query(
@@ -110,11 +106,6 @@ def trade_detail(request: Request, trade_id: int):
 # If you see that error, this is why.
 
 
-# ---------------------------------------------------------------------------
-# PAGE 3 of 5 — TODO   GET  /shops/{shop_id}     (ENDPOINTS.md section 3)
-# PAGE 4 of 5 — TODO   GET  /shops/new           (ENDPOINTS.md section 4)
-# PAGE 5 of 5 — TODO   POST /shops               (ENDPOINTS.md section 5)
-# ---------------------------------------------------------------------------
 @app.get("/shops/new")
 def new_shop(request: Request):
     trades = query("SELECT id, name_ar, name_en FROM trade ORDER BY id;")
@@ -228,22 +219,10 @@ def create_branch(
             status_code=400,
         )
 
-    duplicate_phone = query(
-        "SELECT id FROM branch WHERE phone_number = %s LIMIT 1;",
-        (phone_number,),
-    )
-    if duplicate_phone:
-        return templates.TemplateResponse(
-            request=request,
-            name="branch_new.html",
-            context={
-                "shop": shop,
-                "error": "رقم الهاتف مستخدم لفرع آخر.",
-                "form": form_values,
-            },
-            status_code=400,
-        )
-
+    # Branches are deliberately allowed to share a phone number: a shop often
+    # runs one central line across all of its branches. `branch.phone_number`
+    # has NOT NULL and a CHECK in schema.sql, but no UNIQUE — so there is
+    # nothing to enforce here and no UniqueViolation to catch.
     try:
         execute(
             """
@@ -251,17 +230,6 @@ def create_branch(
             VALUES (%s, %s, %s, %s);
             """,
             (shop_id, branch_name, address, phone_number),
-        )
-    except psycopg.errors.UniqueViolation:
-        return templates.TemplateResponse(
-            request=request,
-            name="branch_new.html",
-            context={
-                "shop": shop,
-                "error": "رقم الهاتف مستخدم لفرع آخر.",
-                "form": form_values,
-            },
-            status_code=400,
         )
     except (psycopg.errors.CheckViolation, psycopg.errors.StringDataRightTruncation):
         return templates.TemplateResponse(
