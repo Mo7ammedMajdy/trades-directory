@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>إضافة فرع — {{ shop.name_ar }}</title>
+  <style>
+    body {
+      margin: 0 auto;
+      padding: 2rem 1rem;
+      max-width: 36rem;
+      font-family: system-ui, "Segoe UI", Tahoma, sans-serif;
+      line-height: 1.6;
+    }
+    form { display: grid; gap: 1rem; }
+    label { display: grid; gap: 0.3rem; font-weight: 600; }
+    input, button { padding: 0.65rem; font: inherit; }
+    button { cursor: pointer; }
+    .error { color: #a40000; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>إضافة فرع — {{ shop.name_ar }}</h1>
+
+    {% if error %}
+      <p class="error" role="alert">{{ error }}</p>
+    {% endif %}
+
+    <form action="/admin/shops/{{ shop.id }}/branches" method="post">
+      <label>
+        اسم الفرع
+        <input type="text" name="branch_name" value="{{ form.branch_name if form else '' }}">
+      </label>
+
+      <label>
+        العنوان
+        <input type="text" name="address" value="{{ form.address if form else '' }}" required>
+      </label>
+
+      <label>
+        رقم الهاتف
+        <input
+          type="tel"
+          name="phone_number"
+          value="{{ form.phone_number if form else '' }}"
+          dir="ltr"
+          maxlength="15"
+          pattern="\+?[0-9]{7,15}"
+          required
+        >
+      </label>
+
+      <button type="submit">إضافة الفرع</button>
+    </form>
+  </main>
+</body>
+</html>
