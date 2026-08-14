@@ -1,79 +1,101 @@
-<!doctype html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>دليل الحرفيين</title>
-  <style>
-    :root {
-      --ground: #fbfbfc;
-      --card:   #ffffff;
-      --line:   #d8dee8;
-      --ink:    #161b24;
-      --muted:  #5b6472;
-      --accent: #1b4d8f;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --ground: #10141b;
-        --card:   #191f29;
-        --line:   #2e3846;
-        --ink:    #e5e9f0;
-        --muted:  #8a94a6;
-        --accent: #7db0f0;
-      }
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      padding: 2.5rem 1.25rem 5rem;
-      background: var(--ground);
-      color: var(--ink);
-      font-family: system-ui, "Segoe UI", Tahoma, sans-serif;
-      line-height: 1.6;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1.5rem;
-    }
-    .col { width: min(100%, 44rem); display: flex; flex-direction: column; gap: 1rem; }
-    h1 { margin: 0; font-size: 1.8rem; font-weight: 600; }
-    p.sub { margin: 0; color: var(--muted); }
-    ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.6rem; }
-    @media (min-width: 34rem) { ul { grid-template-columns: 1fr 1fr; } }
-    a.trade {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 0.75rem;
-      padding: 0.9rem 1.1rem;
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      text-decoration: none;
-      color: inherit;
-    }
-    a.trade:hover, a.trade:focus-visible { border-color: var(--accent); }
-    a.trade:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-    .ar { font-size: 1.05rem; font-weight: 600; }
-    .en { font-size: 0.82rem; color: var(--muted); direction: ltr; }
-  </style>
-</head>
-<body>
-  <div class="col">
-    <h1>دليل الحرفيين والمقاولين</h1>
-    <p class="sub">اختر البند للاطلاع على المحلات المسجلة به</p>
+{% extends "base.html" %}
 
-    <ul>
-      {% for t in trades %}
-      <li>
-        <a class="trade" href="/trades/{{ t.id }}">
-          <span class="ar">{{ t.name_ar }}</span>
-          <span class="en">{{ t.name_en }}</span>
-        </a>
-      </li>
-      {% endfor %}
-    </ul>
-  </div>
-</body>
-</html>
+{% block title %}الرئيسية - دليل المحلات{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 text-center my-4">
+        <h1 class="fw-bold text-primary">مرحباً بك في دليل الأنشطة التجارية</h1>
+        <p class="text-muted fs-5">اختر القسم أو ابحث عن المحل الذي تريده بسهولة</p>
+    </div>
+</div>
+
+<!-- 🔍 شريط البحث -->
+<div class="row justify-content-center mb-4">
+    <div class="col-md-8 col-lg-6">
+        <form action="/" method="GET" class="d-flex shadow-sm rounded">
+            <input type="text" name="q" class="form-control form-control-lg border-primary rounded-start-0" placeholder="ابحث باسم المحل أو النشاط..." value="{{ q or '' }}">
+            <button type="submit" class="btn btn-primary btn-lg rounded-end-0 px-4">
+                🔍 بحث
+            </button>
+        </form>
+    </div>
+</div>
+
+<hr class="my-4">
+
+<!-- 🏪 نتائج البحث في المحلات -->
+{% if shops %}
+<div class="mb-5">
+    <h4 class="fw-bold mb-3 text-dark">🏪 المحلات المطابقة للبحث:</h4>
+    <div class="row g-3">
+        {% for shop in shops %}
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-0 card-hover">
+                <div class="card-body d-flex flex-column p-3">
+                    <h5 class="card-title fw-bold text-primary mb-2">
+                        {{ shop.name_ar or shop.name_en or shop[1] }}
+                    </h5>
+                    <p class="card-text text-muted small flex-grow-1">
+                        {{ shop.technical_capacity or 'لا يوجد وصف متاح حالياً لهذا المحل.' }}
+                    </p>
+                    <div class="mt-auto pt-2">
+                        <a href="/shops/{{ shop.id if shop.id is defined else shop[0] }}" class="btn btn-outline-primary btn-sm w-100 fw-semibold">
+                            عرض التفاصيل والفروع ←
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+<hr class="my-4">
+{% endif %}
+
+<!-- 🏷️ قائمة الأقسام / الأنشطة -->
+{% if trades %}
+<div class="row g-4">
+    <div class="col-12">
+        <h4 class="fw-bold mb-1 text-dark">🏷️ الأقسام والأنشطة:</h4>
+    </div>
+    {% for trade in trades %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 shadow-sm border-0 card-hover">
+            <div class="card-body d-flex flex-column text-center p-4">
+                <!-- اسم القسم -->
+                <h5 class="card-title fw-bold text-primary mb-3">
+                    📁 {{ trade.name_ar or trade.name_en or trade[1] }}
+                </h5>
+                
+                <!-- وصف (إن وجد) -->
+                {% if trade.description or (trade[2] is defined and trade[2]) %}
+                <p class="card-text text-secondary flex-grow-1">
+                    {{ trade.description or trade[2] }}
+                </p>
+                {% endif %}
+                
+                <!-- زر عرض المحلات -->
+                <div class="mt-auto pt-3">
+                    <a href="/trades/{{ trade.id if trade.id is defined else (trade['id'] if trade['id'] is defined else trade[0]) }}" class="btn btn-outline-primary w-100 fw-semibold">
+                        عرض المحلات التابعة للقسم ←
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- حالة عدم وجود نتائج (لا أقسام ولا محلات) -->
+{% if not trades and not shops %}
+<div class="row">
+    <div class="col-12 text-center py-5">
+        <p class="text-muted fs-5">لا توجد نتائج تطابق بحثك.</p>
+        <a href="/" class="btn btn-outline-primary btn-sm mt-2">عرض كل الأقسام</a>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
