@@ -1,24 +1,9 @@
-"""
-Trades Directory — the web app.
-
-Public pages: the trade list, the shops in a trade, one shop in full, and the
-add-shop form. Admin pages (under /admin) add branches to a shop.
-
-Reference SQL lives in ENDPOINTS.md and queries.sql.
-
-Run it:
-    pip install "fastapi[standard]" "psycopg[binary]" jinja2
-    fastapi dev app_starter.py
-
-Then open http://127.0.0.1:8000
-"""
-
 import os
 import re
-
 import psycopg
-from fastapi import FastAPI, Form, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Form
 from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 # ---------------------------------------------------------------------------
@@ -26,306 +11,276 @@ from fastapi.templating import Jinja2Templates
 # ---------------------------------------------------------------------------
 # On Linux this works as-is: it connects as your own OS user.
 #
-# On Windows you must supply the postgres user and the password you set during
-# installation. Either edit the fallback string below, or set the environment
-# variable before running:
+# If your Postgres needs a user, password or a non-default port, set the
+# environment variable rather than editing this line — a password committed to
+# the repository is a password everyone with the link now knows.
 #
-#     set DATABASE_URL=dbname=trades_db user=postgres password=YOUR_PASSWORD host=localhost
+#   Linux/macOS:  export DATABASE_URL="dbname=trades_db user=postgres password=... host=127.0.0.1"
+#   Windows:      set DATABASE_URL=dbname=trades_db user=postgres password=... host=127.0.0.1
 #
-DATABASE_URL = os.environ.get("DATABASE_URL", "dbname=trades_db")
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL", "dbname=trades_db client_encoding='UTF8'"
+)
 
 app = FastAPI(title="Trades Directory")
+
+# ربط مجلد الملفات الثابتة
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 templates = Jinja2Templates(directory="templates")
 
-
 def query(sql, params=()):
-    """Run a SELECT and return a list of dicts, one per row.
-
-    Always pass values through `params` — never build the SQL string with
-    f-strings or +. That is how SQL injection happens.
-
-        query("SELECT * FROM shop WHERE id = %s", (shop_id,))
-    """
+    """Run a SELECT and return a list of dicts, one per row."""
     with psycopg.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
             cur.execute(sql, params)
-            columns = [c.name for c in cur.description]
+            columns = [c[0] for c in cur.description]
             return [dict(zip(columns, row)) for row in cur.fetchall()]
 
-
 def execute(sql, params=()):
-    """Run an INSERT/UPDATE/DELETE. Returns the first row if the SQL has
-    RETURNING, otherwise None."""
+    """Run an INSERT/UPDATE/DELETE."""
     with psycopg.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
             cur.execute(sql, params)
-            row = cur.fetchone() if cur.description else None
             conn.commit()
-            return row
 
-
-# ---------------------------------------------------------------------------
-# Public pages
-# ---------------------------------------------------------------------------
+# 🔍 الرئيسية والبحث
 @app.get("/")
-def home(request: Request):
-    trades = query("SELECT id, name_ar, name_en FROM trade ORDER BY id;")
-    return templates.TemplateResponse(
-        request=request, name="index.html", context={"trades": trades}
-    )
+def home(request: Request, q: str = None):
+    q_clean = q.strip() if q and q.strip() else None
+    
+    if q_clean:
+        search_param = f"%{q_clean}%"
+        # البحث في الأقسام
+        trades = query(
+            "SELECT * FROM trade WHERE name_ar ILIKE %s OR name_en ILIKE %s ORDER BY name_ar;", 
+            (search_param, search_param)
+        )
+        # البحث في المحلات بالاسم العربي أو الإنجليزي
+        shops = query(
+            "SELECT * FROM shop WHERE name_ar ILIKE %s OR name_en ILIKE %s ORDER BY name_ar;",
+            (search_param, search_param)
+        )
+    else:
+        trades = query("SELECT * FROM trade ORDER BY name_ar;")
+        shops = []
 
+    return templates.TemplateResponse(
+        request=request, 
+        name="index.html", 
+        context={"trades": trades, "shops": shops, "q": q_clean or ""}
+    )
 
 @app.get("/trades/{trade_id}")
-def trade_detail(request: Request, trade_id: int):
-    shops = query(
-        """
-        SELECT s.id, s.name_ar, s.name_en, s.commercial_register,
-               count(b.id) AS branch_count
-        FROM shop s
-        JOIN shop_trade st ON st.shop_id = s.id
-        LEFT JOIN branch b ON b.shop_id = s.id
-        WHERE st.trade_id = %s
-        GROUP BY s.id, s.name_ar, s.name_en, s.commercial_register
-        ORDER BY s.name_ar;
-        """,
-        (trade_id,),
-    )
-    trade = query("SELECT id, name_ar FROM trade WHERE id = %s", (trade_id,))
-    if not trade:
-        raise HTTPException(status_code=404, detail="Trade not found")
+def trade_details(request: Request, trade_id: int):
+    trade_data = query("SELECT * FROM trade WHERE id = %s;", (trade_id,))
+    if not trade_data:
+        raise HTTPException(status_code=404, detail="القسم غير موجود")
+    trade = trade_data[0]
+
+    shops = query("""
+        SELECT s.* FROM shop s
+        JOIN shop_trade st ON s.id = st.shop_id
+        WHERE st.trade_id = %s;
+    """, (trade_id,))
+
     return templates.TemplateResponse(
         request=request,
         name="trade.html",
-        context={"trade": trade[0], "shops": shops},
-    )
-
-# NOTE: always call TemplateResponse with these three keyword arguments.
-# Older tutorials show TemplateResponse("page.html", {"request": request, ...}).
-# That form is removed in current versions and raises:
-#     TypeError: cannot use 'tuple' as a dict key
-# If you see that error, this is why.
-
-
-@app.get("/shops/new")
-def new_shop(request: Request):
-    trades = query("SELECT id, name_ar, name_en FROM trade ORDER BY id;")
-    return templates.TemplateResponse(
-        request=request,
-        name="shop_new.html",
-        context={"trades": trades},
+        context={"trade": trade, "shops": shops}
     )
 
 @app.get("/shops/{shop_id}")
-def shop_detail(request: Request, shop_id: int):
-    shops = query(
-        """
-        SELECT id, name_ar, name_en, commercial_register, bank_account,
-               technical_capacity
-        FROM shop
-        WHERE id = %s;
-        """,
-        (shop_id,),
-    )
-    if not shops:
-        raise HTTPException(status_code=404, detail="Shop not found")
+def shop_details(request: Request, shop_id: int):
+    shop_data = query("SELECT * FROM shop WHERE id = %s;", (shop_id,))
+    if not shop_data:
+        raise HTTPException(status_code=404, detail="المحل غير موجود")
+    shop = shop_data[0]
 
-    branches = query(
-        """
-        SELECT b.id, b.branch_name, b.address, b.phone_number,
-               count(e.id) AS staff_count
-        FROM branch b
-        LEFT JOIN employee e ON e.branch_id = b.id
-        WHERE b.shop_id = %s
-        GROUP BY b.id, b.branch_name, b.address, b.phone_number
-        ORDER BY b.id;
-        """,
-        (shop_id,),
-    )
-    trades = query(
-        """
-        SELECT t.name_ar
-        FROM trade t
-        JOIN shop_trade st ON st.trade_id = t.id
-        WHERE st.shop_id = %s
-        ORDER BY t.id;
-        """,
-        (shop_id,),
-    )
+    trades = query("SELECT t.* FROM trade t JOIN shop_trade st ON t.id = st.trade_id WHERE st.shop_id = %s;", (shop_id,))
+    branches = query("SELECT * FROM branch WHERE shop_id = %s;", (shop_id,))
+
     return templates.TemplateResponse(
         request=request,
         name="shop.html",
-        context={"shop": shops[0], "branches": branches, "trades": trades},
+        context={"shop": shop, "trades": trades, "branches": branches}
     )
 
+@app.get("/add-shop")
+def add_shop_page(request: Request):
+    trades = query("SELECT * FROM trade ORDER BY name_ar;")
+    return templates.TemplateResponse(request=request, name="add_shop.html", context={"trades": trades})
 
-# TODO: Protect these admin routes with authentication and authorization before
-# exposing them beyond direct local prototype testing.
-@app.get("/admin/shops/{shop_id}/branches/new")
-def new_branch(request: Request, shop_id: int):
-    shops = query("SELECT id, name_ar FROM shop WHERE id = %s", (shop_id,))
-    if not shops:
-        raise HTTPException(status_code=404, detail="Shop not found")
+# 🛠️ دالة إضافة محل مع التقاط خطأ التكرار بشكل أنيق
+@app.post("/add-shop")
+def add_shop_action(
+    request: Request,
+    name_ar: str = Form(...),
+    name_en: str = Form(""),
+    commercial_register: str = Form(""),
+    bank_account: str = Form(""),
+    technical_capacity: str = Form(""),
+    trade_id: int = Form(...)
+):
+    try:
+        with psycopg.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cur:
+                # 1. إدخال المحل الجديد
+                cur.execute(
+                    """
+                    INSERT INTO shop (name_ar, name_en, commercial_register, bank_account, technical_capacity)
+                    VALUES (%s, %s, %s, %s, %s) RETURNING id;
+                    """,
+                    (
+                        name_ar.strip(),
+                        name_en.strip() if name_en and name_en.strip() else None,
+                        commercial_register.strip() if commercial_register and commercial_register.strip() else None,
+                        bank_account.strip() if bank_account and bank_account.strip() else None,
+                        technical_capacity.strip() if technical_capacity and technical_capacity.strip() else None
+                    )
+                )
+                shop_id = cur.fetchone()[0]
 
+                # 2. ربط المحل بالقسم
+                cur.execute(
+                    "INSERT INTO shop_trade (shop_id, trade_id) VALUES (%s, %s);",
+                    (int(shop_id), int(trade_id))
+                )
+                conn.commit()
+
+        return RedirectResponse(url=f"/shops/{shop_id}", status_code=303)
+
+    except psycopg.errors.UniqueViolation:
+        # إرجاع المستخدم لصفحة الإضافة مع إظهار رسالة تنبيه
+        trades = query("SELECT * FROM trade ORDER BY name_ar;")
+        return templates.TemplateResponse(
+            request=request, 
+            name="add_shop.html", 
+            context={
+                "trades": trades, 
+                "error": "رقم السجل التجاري هذا مُسجل بالفعل لمحل آخر، يرجى إدخال رقم مختلف."
+            }
+        )
+    except Exception as e:
+        # Log the real error for us; show the user a plain message. Echoing the
+        # raw exception back would expose table and column names.
+        print(f"Error adding shop: {e}")
+        raise HTTPException(status_code=500, detail="حدث خطأ أثناء حفظ المحل.")
+
+@app.get("/shops/{shop_id}/edit")
+def edit_shop_page(request: Request, shop_id: int):
+    shop_data = query("SELECT * FROM shop WHERE id = %s;", (shop_id,))
+    if not shop_data:
+        raise HTTPException(status_code=404, detail="المحل غير موجود")
+    shop = shop_data[0]
     return templates.TemplateResponse(
         request=request,
-        name="branch_new.html",
-        context={"shop": shops[0]},
+        name="edit_shop.html",
+        context={"shop": shop}
     )
 
-
-@app.post("/admin/shops/{shop_id}/branches")
-def create_branch(
+@app.post("/shops/{shop_id}/edit")
+def edit_shop_action(
     request: Request,
     shop_id: int,
-    address: str = Form(...),
-    phone_number: str = Form(...),
-    branch_name: str | None = Form(None),
+    name_ar: str = Form(...),
+    name_en: str = Form(""),
+    commercial_register: str = Form(""),
+    bank_account: str = Form(""),
+    technical_capacity: str = Form("")
 ):
-    shops = query("SELECT id, name_ar FROM shop WHERE id = %s", (shop_id,))
-    if not shops:
-        raise HTTPException(status_code=404, detail="Shop not found")
-    shop = shops[0]
+    try:
+        execute(
+            """
+            UPDATE shop
+            SET name_ar = %s, name_en = %s, commercial_register = %s, bank_account = %s, technical_capacity = %s
+            WHERE id = %s;
+            """,
+            (
+                name_ar.strip(),
+                name_en.strip() if name_en and name_en.strip() else None,
+                commercial_register.strip() if commercial_register and commercial_register.strip() else None,
+                bank_account.strip() if bank_account and bank_account.strip() else None,
+                technical_capacity.strip() if technical_capacity and technical_capacity.strip() else None,
+                shop_id
+            )
+        )
+        return RedirectResponse(url=f"/shops/{shop_id}", status_code=303)
+    except psycopg.errors.UniqueViolation:
+        shop_data = query("SELECT * FROM shop WHERE id = %s;", (shop_id,))
+        shop = shop_data[0] if shop_data else None
+        return templates.TemplateResponse(
+            request=request,
+            name="edit_shop.html",
+            context={
+                "shop": shop,
+                "error": "رقم السجل التجاري هذا مُسجل بالفعل لمحل آخر."
+            }
+        )
+
+@app.get("/shops/{shop_id}/add-branch")
+def add_branch_page(request: Request, shop_id: int):
+    shop_data = query("SELECT * FROM shop WHERE id = %s;", (shop_id,))
+    if not shop_data:
+        raise HTTPException(status_code=404, detail="المحل غير موجود")
+    return templates.TemplateResponse(
+        request=request,
+        name="add_branch.html",
+        context={"shop": shop_data[0], "shop_id": shop_id}
+    )
+
+@app.post("/shops/{shop_id}/add-branch")
+def add_branch_action(
+    request: Request,
+    shop_id: int,
+    branch_name: str = Form(""),
+    address: str = Form(...),
+    phone_number: str = Form("")
+):
+    shop_data = query("SELECT * FROM shop WHERE id = %s;", (shop_id,))
+    if not shop_data:
+        raise HTTPException(status_code=404, detail="المحل غير موجود")
 
     address = address.strip()
     phone_number = phone_number.strip()
     branch_name = branch_name.strip() if branch_name and branch_name.strip() else None
-    form_values = {
-        "branch_name": branch_name or "",
-        "address": address,
-        "phone_number": phone_number,
-    }
 
+    def reject(message):
+        return templates.TemplateResponse(
+            request=request,
+            name="add_branch.html",
+            context={
+                "shop": shop_data[0],
+                "shop_id": shop_id,
+                "error": message,
+                "form": {
+                    "branch_name": branch_name or "",
+                    "address": address,
+                    "phone_number": phone_number,
+                },
+            },
+            status_code=400,
+        )
+
+    # address and phone_number are NOT NULL in schema.sql, and phone_number has
+    # a CHECK constraint. Validate here, or an empty form field becomes a 500.
     if not address:
-        return templates.TemplateResponse(
-            request=request,
-            name="branch_new.html",
-            context={
-                "shop": shop,
-                "error": "يرجى إدخال عنوان الفرع.",
-                "form": form_values,
-            },
-            status_code=400,
-        )
+        return reject("يرجى إدخال عنوان الفرع.")
+    if not re.fullmatch(r"\+?[0-9]{7,15}", phone_number):
+        return reject("يرجى إدخال رقم هاتف صحيح من 7 إلى 15 رقماً.")
 
-    if len(phone_number) > 15 or not re.fullmatch(r"\+?[0-9]{7,15}", phone_number):
-        return templates.TemplateResponse(
-            request=request,
-            name="branch_new.html",
-            context={
-                "shop": shop,
-                "error": "يرجى إدخال رقم هاتف صحيح من 7 إلى 15 رقماً.",
-                "form": form_values,
-            },
-            status_code=400,
-        )
-
-    # Branches are deliberately allowed to share a phone number: a shop often
-    # runs one central line across all of its branches. `branch.phone_number`
-    # has NOT NULL and a CHECK in schema.sql, but no UNIQUE — so there is
-    # nothing to enforce here and no UniqueViolation to catch.
+    # Branches may deliberately share a phone number — a shop often runs one
+    # central line across all of its branches, so there is no UNIQUE to violate.
     try:
         execute(
             """
-            INSERT INTO branch(shop_id, branch_name, address, phone_number)
+            INSERT INTO branch (shop_id, branch_name, address, phone_number)
             VALUES (%s, %s, %s, %s);
             """,
             (shop_id, branch_name, address, phone_number),
         )
-    except (psycopg.errors.CheckViolation, psycopg.errors.StringDataRightTruncation):
-        return templates.TemplateResponse(
-            request=request,
-            name="branch_new.html",
-            context={
-                "shop": shop,
-                "error": "بيانات الفرع غير صالحة.",
-                "form": form_values,
-            },
-            status_code=400,
-        )
-    except psycopg.errors.ForeignKeyViolation:
-        raise HTTPException(status_code=404, detail="Shop not found")
-
+    except (psycopg.errors.CheckViolation,
+            psycopg.errors.NotNullViolation,
+            psycopg.errors.StringDataRightTruncation):
+        return reject("بيانات الفرع غير صالحة.")
     return RedirectResponse(url=f"/shops/{shop_id}", status_code=303)
-
-
-@app.post("/shops")
-def create_shop(
-    request: Request,
-    name_ar: str = Form(...),
-    trade_id: int = Form(...),
-    name_en: str | None = Form(None),
-    commercial_register: str | None = Form(None),
-    bank_account: str | None = Form(None),
-    technical_capacity: str | None = Form(None),
-):
-    trades = query("SELECT id, name_ar, name_en FROM trade ORDER BY id;")
-    name_ar = name_ar.strip()
-    if not name_ar:
-        return templates.TemplateResponse(
-            request=request,
-            name="shop_new.html",
-            context={
-                "error": "يرجى إدخال اسم المحل بالعربية.",
-                "trades": trades,
-            },
-            status_code=400,
-        )
-
-    if not any(trade["id"] == trade_id for trade in trades):
-        return templates.TemplateResponse(
-            request=request,
-            name="shop_new.html",
-            context={"error": "الحرفة المختارة غير موجودة.", "trades": trades},
-            status_code=400,
-        )
-
-    def blank_to_none(value: str | None):
-        return value if value and value.strip() else None
-
-    try:
-        with psycopg.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    INSERT INTO shop(
-                        name_ar, name_en, commercial_register, bank_account,
-                        technical_capacity
-                    )
-                    VALUES (%s, %s, %s, %s, %s)
-                    RETURNING id;
-                    """,
-                    (
-                        name_ar,
-                        blank_to_none(name_en),
-                        blank_to_none(commercial_register),
-                        blank_to_none(bank_account),
-                        blank_to_none(technical_capacity),
-                    ),
-                )
-                new_id = cur.fetchone()[0]
-                cur.execute(
-                    """
-                    INSERT INTO shop_trade(shop_id, trade_id)
-                    VALUES (%s, %s);
-                    """,
-                    (new_id, trade_id),
-                )
-    except psycopg.errors.UniqueViolation:
-        return templates.TemplateResponse(
-            request=request,
-            name="shop_new.html",
-            context={
-                "error": "رقم السجل التجاري مستخدم بالفعل.",
-                "trades": trades,
-            },
-            status_code=400,
-        )
-    except psycopg.errors.ForeignKeyViolation:
-        return templates.TemplateResponse(
-            request=request,
-            name="shop_new.html",
-            context={"error": "الحرفة المختارة غير موجودة.", "trades": trades},
-            status_code=400,
-        )
-
-    return RedirectResponse(url=f"/shops/{new_id}", status_code=303)

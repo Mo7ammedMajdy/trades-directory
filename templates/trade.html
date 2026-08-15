@@ -1,45 +1,47 @@
-<!doctype html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ trade.name_ar }} — دليل الحرفيين</title>
-  <style>
-    body {
-      margin: 0 auto;
-      padding: 2rem 1rem;
-      max-width: 48rem;
-      font-family: system-ui, "Segoe UI", Tahoma, sans-serif;
-      line-height: 1.6;
-    }
-    ul { list-style: none; padding: 0; display: grid; gap: 0.75rem; }
-    li { padding: 1rem; border: 1px solid #d8dee8; border-radius: 6px; }
-    .details { color: #5b6472; }
-    .en { direction: ltr; unicode-bidi: isolate; }
-  </style>
-</head>
-<body>
-  <main>
-    <h1>محلات {{ trade.name_ar }}</h1>
+{% extends "base.html" %}
 
-    {% if shops %}
-    <ul>
-      {% for shop in shops %}
-      <li>
-        <a href="/shops/{{ shop.id }}">{{ shop.name_ar }}</a>
-        <div class="details">
-          <span class="en">{{ shop.name_en or "—" }}</span>
-          <span>السجل التجاري: {{ shop.commercial_register or "—" }}</span>
-          <span>عدد الفروع: {{ shop.branch_count }}</span>
+{% block title %}تفاصيل القسم - دليل المحلات{% endblock %}
+
+{% block content %}
+<!-- الهيدر وزر العودة -->
+<div class="d-flex justify-content-between align-items-center my-4">
+    <div>
+        <h2 class="fw-bold mb-1">المحلات المتاحة</h2>
+        <p class="text-muted mb-0">قائمة المحلات والأنشطة المسجلة في هذا القسم</p>
+    </div>
+    <a href="/" class="btn btn-outline-secondary">
+        <i class="fa-solid fa-arrow-right me-1"></i> العودة للرئيسية
+    </a>
+</div>
+
+<!-- شبكة عرض المحلات -->
+<div class="row g-4">
+    {% for shop in shops %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title fw-bold text-dark">
+                    {{ shop.name_ar or shop.name or shop[1] }}
+                </h5>
+                <p class="card-text text-muted flex-grow-1">
+                    {{ shop.description or 'لا يوجد وصف متاح حالياً لهذا المحل.' }}
+                </p>
+                <div class="mt-3">
+                    <a href="/shops/{{ shop.id if shop.id is defined else (shop['id'] if shop['id'] is defined else shop[0]) }}" class="btn btn-primary w-100">
+                        عرض التفاصيل والفروع
+                    </a>
+                </div>
+            </div>
         </div>
-      </li>
-      {% endfor %}
-    </ul>
+    </div>
     {% else %}
-    <p>لا توجد محلات مسجلة في هذا البند.</p>
-    {% endif %}
-
-    <a href="/">العودة إلى البنود</a>
-  </main>
-</body>
-</html>
+    <div class="col-12 text-center my-5">
+        <div class="p-5 bg-white rounded shadow-sm">
+            <i class="fa-solid fa-store-slash fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">لا توجد محلات مسجلة في هذا القسم حالياً.</h5>
+            <a href="/add-shop" class="btn btn-primary mt-3">إضافة محل جديد</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

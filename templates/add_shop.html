@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}{% if shop %}{{ shop.name_ar or shop.name_en or 'تفاصيل المحل' }}{% else %}المحل غير موجود{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm border-0 mt-3">
+            <div class="card-header bg-primary text-white p-3">
+                <h4 class="mb-0 fw-bold">➕ إضافة محل جديد</h4>
+            </div>
+            <div class="card-body p-4">
+
+                {% if error %}
+                <div class="alert alert-danger" role="alert">
+                    ⚠️ {{ error }}
+                </div>
+                {% endif %}
+
+                <form action="/add-shop" method="POST">
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">اسم المحل (بالعربية) <span class="text-danger">*</span></label>
+                        <input type="text" name="name_ar" class="form-control" placeholder="مثال: مطعم الياسمين" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">اسم المحل (بالإنجليزية)</label>
+                        <input type="text" name="name_en" class="form-control" placeholder="e.g. Al-Yasmeen Restaurant">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">اختر القسم / البند الرئيسي <span class="text-danger">*</span></label>
+                        <select name="trade_id" class="form-select" required>
+                            <option value="" disabled selected>-- اختر القسم --</option>
+                            {% for trade in trades %}
+                                <option value="{{ trade.id if trade.id is defined else (trade['id'] if trade['id'] is defined else trade[0]) }}">
+                                    {{ trade.name_ar or trade.name or trade[1] }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">السجل التجاري</label>
+                        <input type="text" name="commercial_register" class="form-control" placeholder="رقم السجل التجاري">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">الحساب البنكي</label>
+                        <input type="text" name="bank_account" class="form-control" placeholder="رقم الحساب البنكي / IBAN">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">القدرة الفنية</label>
+                        <input type="text" name="technical_capacity" class="form-control" placeholder="الوصف أو القدرة التشغيلية">
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg fw-semibold">💾 حفظ المحل</button>
+                        <a href="/" class="btn btn-outline-secondary">← العودة للرئيسية</a>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
