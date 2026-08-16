@@ -27,7 +27,9 @@ and data are Arabic-first (RTL).
 | `presentation-assets/02-search.png` | Search results for «سباك». Slide 9. |
 | `presentation-assets/03-trade.png` | Shops within one trade. Slide 8. |
 | `presentation-assets/04-shop.png` | **One shop page showing all five tables at once** — the shop, its trades, its branches, and the employees inside each branch. The strongest single image in the set. Slides 6, 8, 14. |
-| `presentation-assets/05-add-shop.png` | The add-shop form. Slide 10. |
+| `presentation-assets/05-add-shop.png` | The add-shop form, with multi-trade checkboxes. Slide 10. |
+| `presentation-assets/08-shops-list.png` | All shops, with trade and branch counts. Slide 10. |
+| `presentation-assets/09-add-employee.png` | The add-employee form. Slide 10. |
 | `presentation-assets/06-add-branch.png` | The add-branch form. Slide 10. |
 | `presentation-assets/07-api-docs.png` | Auto-generated API docs at `/docs`. Slide 8. |
 | `presentation-assets/psql-outputs.txt` | Real terminal output — table list, full `\d branch`, row counts, three rejected inserts, the three-table join. **The single most useful asset in here.** |
@@ -35,7 +37,7 @@ and data are Arabic-first (RTL).
 | `seed.sql` | 60 lines. Slide 11. |
 | `queries.sql` | 56 lines. Slides 6–7. |
 | `ENDPOINTS.md` | The route contract. Slide 8. |
-| `app_starter.py` | The web app, 9 route handlers. Slide 8. |
+| `app_starter.py` | The web app, 27 route handlers. Slide 8. |
 | `erd.dot` / `erd.dbml` | Diagram sources, if the ERD needs redrawing. |
 
 ### Links
@@ -52,7 +54,8 @@ and data are Arabic-first (RTL).
 ### Numbers that recur
 
 - **5 tables**, **55 rows**: 7 trades, 8 shops, 10 shop-trade links, 13 branches, 17 employees
-- **9 route handlers**, **4 page templates** plus a shared base
+- **27 route handlers** — full create/read/update/delete on all five tables
+- **9 page templates** plus a shared base
 - PostgreSQL **18.4**, FastAPI **0.141.1**
 - **7 GitHub issues**, all closed
 
@@ -350,8 +353,9 @@ Python turns them into a page and forgets them.
 4. The rows go into trade.html, which renders to HTML and is sent back
 ```
 
-**The app has 9 route handlers** covering: the home page and search, one trade,
-one shop, add a shop, edit a shop, and add a branch.
+**The app has 27 route handlers** — full create, read, update and delete on
+every one of the five tables, including adding and removing a shop's trades
+after it exists.
 
 **Where the data actually lands on screen:** the route passes a Python list to
 the template, and Jinja loops over it:
@@ -433,6 +437,18 @@ with psycopg.connect(DATABASE_URL) as conn:
 ```
 
 Either both are written or neither is. A half-created shop cannot exist.
+
+**Every table is fully editable.** The app does create, read, update and delete
+on all five — including adding and removing a shop's trades after it exists,
+which is what makes the junction table usable rather than decorative. A shop can
+be created against several trades at once; شركة الإتقان's three are entered from
+one form.
+
+**Deletes lean on the schema.** Removing a shop removes its branches, their
+employees, and its trade links in a single statement, because `ON DELETE CASCADE`
+is declared in `schema.sql`. The application does not loop and clean up — the
+database does it, correctly, every time. Each confirmation dialog states exactly
+what else will go.
 
 **Validation happens twice, deliberately.** The form checks the phone number
 before inserting so the user gets a readable Arabic message; the database checks
@@ -577,7 +593,7 @@ Live if there's internet: https://github.com/Mo7ammedMajdy/trades-directory
 
 **Content**
 
-What exists, in numbers: **5 tables, 55 rows, 9 routes, 4 pages, 7 issues
+What exists, in numbers: **5 tables, 55 rows, 27 routes, 9 pages, 7 issues
 closed, 3 contributors.**
 
 What the database guarantees that an ordinary app cannot: no orphan branches, no
