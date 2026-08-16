@@ -4,7 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}دليل الحرفيين{% endblock %} — دليل الحرفيين</title>
-  <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+  <!-- ?v= is a cache buster. The stylesheet was replaced wholesale at this
+       URL, so browsers that had the old one held on to it. Bump the number
+       whenever style.css changes in a way people must see immediately. -->
+  <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}?v=2">
 </head>
 <body>
 
