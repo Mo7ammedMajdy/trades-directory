@@ -19,6 +19,36 @@ echo   Trades Directory - setup
 echo  ============================================
 echo.
 
+REM --- are the project files actually here? ----------------------------------
+REM  This script must sit in the same folder as schema.sql and seed.sql.
+REM  Copying the .bat out on its own is the usual reason setup fails.
+if not exist "schema.sql" goto :missing_files
+if not exist "seed.sql" goto :missing_files
+if not exist "app_starter.py" goto :missing_files
+goto :files_ok
+
+:missing_files
+echo  [X] The project files are not in this folder.
+echo.
+echo      This script is looking in:
+echo        %CD%
+echo.
+echo      It needs schema.sql, seed.sql and app_starter.py to be sitting
+echo      right next to it. Move this .bat back into the project folder,
+echo      or download the whole project again:
+echo.
+echo        https://github.com/Mo7ammedMajdy/trades-directory
+echo        Code  ^>  Download ZIP  ^>  extract  ^>  run this from inside
+echo.
+echo      Files currently in this folder:
+dir /b
+echo.
+pause
+exit /b 1
+
+:files_ok
+echo  [OK] Project files found
+
 REM --- locate psql -----------------------------------------------------------
 set "PSQL="
 set "CREATEDB="
