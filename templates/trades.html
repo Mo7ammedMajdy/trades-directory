@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% set nav = 'trades' %}
+{% block title %}الأقسام{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>الأقسام</h1>
+    <p class="sub">أنواع الحرف والأنشطة التي يُصنَّف المحلات تحتها</p>
+  </div>
+  <a href="/trades/new" class="btn btn-primary">إضافة قسم</a>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>كل الأقسام</h2>
+    <span class="count">{{ trades|length }}</span>
+  </div>
+  {% if trades %}
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th>#</th><th>الاسم بالعربية</th><th>بالإنجليزية</th><th>عدد المحلات</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for t in trades %}
+        <tr>
+          <td class="num">{{ t.id }}</td>
+          <td><a class="rowlink" href="/trades/{{ t.id }}">{{ t.name_ar }}</a></td>
+          <td class="mono">{{ t.name_en }}</td>
+          <td><span class="count">{{ t.shop_count }}</span></td>
+          <td class="actions">
+            <a class="btn-link" href="/trades/{{ t.id }}/edit">تعديل</a>
+            <form class="inline" method="post" action="/trades/{{ t.id }}/delete"
+                  onsubmit="return confirm('حذف قسم «{{ t.name_ar }}»؟ سيُزال ارتباطه بـ {{ t.shop_count }} محل. المحلات نفسها لن تُحذف.');">
+              <button type="submit" class="btn-link danger">حذف</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">
+    <p>لا توجد أقسام بعد.</p>
+    <a href="/trades/new" class="btn btn-primary">إضافة أول قسم</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

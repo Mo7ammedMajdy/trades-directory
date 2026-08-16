@@ -1,91 +1,137 @@
 {% extends "base.html" %}
-
-{% block title %}{% if shop %}{{ shop.name_ar or shop.name_en or 'تفاصيل المحل' }}{% else %}المحل غير موجود{% endif %}{% endblock %}
+{% set nav = 'shops' %}
+{% block title %}{{ shop.name_ar }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    {% if shop %}
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body p-4">
-            <h2 class="fw-bold text-primary mb-3">🏪 {{ shop.name_ar or shop.name_en }}</h2>
-            <hr>
-            <p><strong>اسم المحل (بالإنجليزي):</strong> {{ shop.name_en or 'غير متوفر' }}</p>
-            <p><strong>السجل التجاري:</strong> {{ shop.commercial_register or 'غير متوفر' }}</p>
-            <p><strong>الحساب البنكي:</strong> {{ shop.bank_account or 'غير متوفر' }}</p>
-            <p><strong>القدرة الفنية:</strong> {{ shop.technical_capacity or 'غير متوفر' }}</p>
-        </div>
+<p class="crumb"><a href="/shops">المحلات</a> › {{ shop.name_ar }}</p>
+
+<div class="page-head">
+  <div>
+    <h1>{{ shop.name_ar }}</h1>
+    {% if shop.name_en %}<p class="sub mono">{{ shop.name_en }}</p>{% endif %}
+  </div>
+  <div class="btn-row">
+    <a class="btn" href="/shops/{{ shop.id }}/edit">تعديل المحل</a>
+    <form class="inline" method="post" action="/shops/{{ shop.id }}/delete"
+          onsubmit="return confirm('حذف «{{ shop.name_ar }}»؟ سيُحذف معه {{ branches|length }} فرع وكل العاملين بها. لا يمكن التراجع.');">
+      <button type="submit" class="btn btn-danger">حذف المحل</button>
+    </form>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head"><h2>بيانات المحل</h2></div>
+  <div class="panel-body">
+    <dl class="fields">
+      <dt>السجل التجاري</dt>
+      <dd>{% if shop.commercial_register %}<span class="mono">{{ shop.commercial_register }}</span>
+          {% else %}<span class="none">غير مسجل</span>{% endif %}</dd>
+      <dt>الحساب البنكي</dt>
+      <dd>{% if shop.bank_account %}<span class="mono">{{ shop.bank_account }}</span>
+          {% else %}<span class="none">غير مسجل</span>{% endif %}</dd>
+      <dt>القدرة الفنية</dt>
+      <dd>{{ shop.technical_capacity or '' }}{% if not shop.technical_capacity %}<span class="none">غير مسجلة</span>{% endif %}</dd>
+    </dl>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>الأقسام</h2>
+    <span class="count">{{ trades|length }}</span>
+  </div>
+  <div class="panel-body">
+    {% if trades %}
+    <div class="chips" style="margin-bottom: 1rem;">
+      {% for t in trades %}
+      <span class="chip">
+        <a href="/trades/{{ t.id }}" style="color:inherit;text-decoration:none;">{{ t.name_ar }}</a>
+        <form class="inline" method="post" action="/shops/{{ shop.id }}/trades/{{ t.id }}/delete"
+              onsubmit="return confirm('إزالة «{{ t.name_ar }}» من أقسام هذا المحل؟');">
+          <button type="submit" title="إزالة القسم">×</button>
+        </form>
+      </span>
+      {% endfor %}
     </div>
-
-    <!-- الأقسام / الأنشطة المرتبطة -->
-    <h4 class="fw-bold mb-3">🏷️ الأقسام المرتبطة</h4>
-    <div class="mb-4">
-        {% for trade in trades %}
-            <span class="badge bg-secondary fs-6 me-1">{{ trade.name_ar or trade.name_en }}</span>
-        {% else %}
-            <p class="text-muted">لا توجد أقسام مرتبطة.</p>
-        {% endfor %}
-    </div>
-
-    <!-- الفروع -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="fw-bold mb-0">📍 الفروع</h4>
-        <a href="/shops/{{ shop.id }}/add-branch" class="btn btn-sm btn-success">+ إضافة فرع جديد</a>
-    </div>
-
-    <div class="row g-3">
-        {% for branch in branches %}
-        <div class="col-md-6">
-            <div class="card h-100 border">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <h5 class="card-title fw-bold mb-0">{{ branch.branch_name or 'فرع الرئيسي' }}</h5>
-                        <span class="badge bg-secondary">{{ branch.staff_count }} عامل</span>
-                    </div>
-                    <p class="card-text mb-1"><strong>العنوان:</strong> {{ branch.address }}</p>
-                    <p class="card-text mb-0"><strong>الهاتف:</strong> {{ branch.phone_number or 'غير متوفر' }}</p>
-
-                    {% set staff = employees_by_branch.get(branch.id, []) %}
-                    {% if staff %}
-                    <hr class="my-3">
-                    <h6 class="fw-bold mb-2">👷 العاملون بالفرع</h6>
-                    <ul class="list-group list-group-flush">
-                        {% for e in staff %}
-                        <li class="list-group-item px-0 py-2">
-                            <div class="fw-semibold">{{ e.name_ar }}</div>
-                            <small class="text-muted d-block">
-                                {% if e.name_en %}{{ e.name_en }} — {% endif %}
-                                هاتف: {{ e.phone_number }}
-                            </small>
-                            <small class="text-muted d-block">
-                                الرقم القومي: {{ e.national_id or 'غير مسجل' }}
-                            </small>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                    {% else %}
-                    <hr class="my-3">
-                    <p class="text-muted small mb-0">لا يوجد عاملون مسجلون بهذا الفرع.</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        {% else %}
-        <div class="col-12">
-            <p class="text-muted">لا توجد فروع مضافة لهذا المحل حتى الآن.</p>
-        </div>
-        {% endfor %}
-    </div>
-
-    <div class="mt-4">
-        <a href="/shops/{{ shop.id }}/edit" class="btn btn-warning">✏️ تعديل المحل</a>
-        <a href="/" class="btn btn-outline-secondary">← العودة للرئيسية</a>
-    </div>
-
     {% else %}
-    <div class="text-center py-5">
-        <h3 class="text-danger">⚠️ المحل غير موجود</h3>
-        <a href="/" class="btn btn-primary mt-3">العودة للرئيسية</a>
-    </div>
+    <p class="none" style="margin-bottom:1rem;">هذا المحل غير مرتبط بأي قسم، ولن يظهر في تصفح الأقسام.</p>
     {% endif %}
+
+    {% if available_trades %}
+    <form method="post" action="/shops/{{ shop.id }}/trades" class="btn-row">
+      <select name="trade_id" style="width:auto;min-width:12rem;">
+        {% for t in available_trades %}<option value="{{ t.id }}">{{ t.name_ar }}</option>{% endfor %}
+      </select>
+      <button type="submit" class="btn">إضافة قسم</button>
+    </form>
+    {% else %}
+    <p class="none">المحل مرتبط بكل الأقسام المتاحة.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>الفروع والعاملون</h2>
+    <a class="btn btn-sm btn-primary" href="/shops/{{ shop.id }}/branches/new">إضافة فرع</a>
+  </div>
+
+  {% if branches %}
+  {% for b in branches %}
+  <div class="panel-body" {% if not loop.last %}style="border-bottom:1px solid var(--rule);"{% endif %}>
+    <div class="page-head" style="margin-bottom:0.75rem;">
+      <div>
+        <h1 style="font-size:1.05rem;">{{ b.branch_name or 'فرع بدون اسم' }}</h1>
+        <p class="sub">{{ b.address }} · <span class="mono">{{ b.phone_number }}</span></p>
+      </div>
+      <div class="btn-row">
+        <a class="btn btn-sm" href="/branches/{{ b.id }}/employees/new">إضافة عامل</a>
+        <a class="btn btn-sm" href="/branches/{{ b.id }}/edit">تعديل الفرع</a>
+        <form class="inline" method="post" action="/branches/{{ b.id }}/delete"
+              onsubmit="return confirm('حذف الفرع؟ سيُحذف معه {{ b.staff_count }} عامل. لا يمكن التراجع.');">
+          <button type="submit" class="btn btn-sm btn-danger">حذف</button>
+        </form>
+      </div>
+    </div>
+
+    {% set staff = employees_by_branch.get(b.id, []) %}
+    {% if staff %}
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr><th>#</th><th>العامل</th><th>بالإنجليزية</th><th>الرقم القومي</th><th>الهاتف</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for e in staff %}
+          <tr>
+            <td class="num">{{ e.id }}</td>
+            <td>{{ e.name_ar }}</td>
+            <td class="mono">{{ e.name_en or '—' }}</td>
+            <td class="mono">{{ e.national_id or '—' }}</td>
+            <td class="mono">{{ e.phone_number }}</td>
+            <td class="actions">
+              <a class="btn-link" href="/employees/{{ e.id }}/edit">تعديل</a>
+              <form class="inline" method="post" action="/employees/{{ e.id }}/delete"
+                    onsubmit="return confirm('حذف «{{ e.name_ar }}» من العاملين؟');">
+                <button type="submit" class="btn-link danger">حذف</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="none" style="font-size:0.9rem;">لا يوجد عاملون مسجلون بهذا الفرع.</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  {% else %}
+  <div class="empty">
+    <p>لا توجد فروع مسجلة لهذا المحل.</p>
+    <a class="btn btn-primary" href="/shops/{{ shop.id }}/branches/new">إضافة أول فرع</a>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

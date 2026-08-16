@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% set nav = 'shops' %}
+{% block title %}{% if branch %}تعديل فرع{% else %}فرع جديد{% endif %}{% endblock %}
+
+{% block content %}
+<p class="crumb"><a href="/shops">المحلات</a> ›
+  <a href="/shops/{{ shop.id }}">{{ shop.name_ar }}</a> ›
+  {% if branch %}تعديل فرع{% else %}فرع جديد{% endif %}</p>
+
+<div class="page-head">
+  <div>
+    <h1>{% if branch %}تعديل فرع{% else %}فرع جديد{% endif %}</h1>
+    <p class="sub">تابع لـ {{ shop.name_ar }}</p>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-body">
+    <form class="form" method="post"
+          action="{% if branch %}/branches/{{ branch.id }}/edit{% else %}/shops/{{ shop.id }}/branches/new{% endif %}">
+
+      <div class="field">
+        <label for="branch_name">اسم الفرع</label>
+        <input id="branch_name" name="branch_name" type="text"
+               value="{{ form.branch_name or '' }}" placeholder="مثال: فرع مدينة نصر">
+        <span class="hint">اختياري — اتركه فارغاً للحرفي الذي يعمل من مكان واحد.</span>
+      </div>
+
+      <div class="field">
+        <label for="address">العنوان <span class="req">*</span></label>
+        <input id="address" name="address" type="text" required
+               value="{{ form.address or '' }}" placeholder="شارع عباس العقاد، مدينة نصر، القاهرة">
+      </div>
+
+      <div class="field">
+        <label for="phone_number">رقم الهاتف <span class="req">*</span></label>
+        <input id="phone_number" name="phone_number" type="tel" required class="mono-input"
+               value="{{ form.phone_number or '' }}" placeholder="01001234567">
+        <span class="hint">من 7 إلى 15 رقماً، ويمكن أن يبدأ بعلامة +. يجوز أن تشترك الفروع في رقم واحد.</span>
+      </div>
+
+      <div class="btn-row">
+        <button type="submit" class="btn btn-primary">
+          {% if branch %}حفظ التعديلات{% else %}إضافة الفرع{% endif %}
+        </button>
+        <a class="btn" href="/shops/{{ shop.id }}">إلغاء</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

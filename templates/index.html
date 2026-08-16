@@ -1,101 +1,87 @@
 {% extends "base.html" %}
-
-{% block title %}الرئيسية - دليل المحلات{% endblock %}
+{% set nav = 'home' %}
+{% block title %}لوحة البيانات{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12 text-center my-4">
-        <h1 class="fw-bold text-primary">مرحباً بك في دليل الأنشطة التجارية</h1>
-        <p class="text-muted fs-5">اختر القسم أو ابحث عن المحل الذي تريده بسهولة</p>
-    </div>
+<div class="page-head">
+  <div>
+    <h1>لوحة البيانات</h1>
+    <p class="sub">دليل الحرفيين والمحلات، مقسّم حسب النشاط</p>
+  </div>
+  <div class="btn-row">
+    <a href="/shops/new" class="btn btn-primary">إضافة محل</a>
+    <a href="/trades/new" class="btn">إضافة قسم</a>
+  </div>
 </div>
 
-<!-- 🔍 شريط البحث -->
-<div class="row justify-content-center mb-4">
-    <div class="col-md-8 col-lg-6">
-        <form action="/" method="GET" class="d-flex shadow-sm rounded">
-            <input type="text" name="q" class="form-control form-control-lg border-primary rounded-start-0" placeholder="ابحث باسم المحل أو النشاط..." value="{{ q or '' }}">
-            <button type="submit" class="btn btn-primary btn-lg rounded-end-0 px-4">
-                🔍 بحث
-            </button>
-        </form>
-    </div>
+<div class="stats">
+  <div class="stat"><div class="n">{{ counts.trades }}</div><div class="l">قسم</div></div>
+  <div class="stat"><div class="n">{{ counts.shops }}</div><div class="l">محل</div></div>
+  <div class="stat"><div class="n">{{ counts.branches }}</div><div class="l">فرع</div></div>
+  <div class="stat"><div class="n">{{ counts.employees }}</div><div class="l">عامل</div></div>
+  <div class="stat"><div class="n">{{ counts.links }}</div><div class="l">ارتباط بالأقسام</div></div>
 </div>
 
-<hr class="my-4">
+<form class="searchbar" method="get" action="/">
+  <input type="search" name="q" value="{{ q }}"
+         placeholder="ابحث باسم المحل، السجل التجاري، أو رقم هاتف فرع">
+  <button type="submit" class="btn">بحث</button>
+  {% if q %}<a href="/" class="btn">إلغاء</a>{% endif %}
+</form>
 
-<!-- 🏪 نتائج البحث في المحلات -->
-{% if shops %}
-<div class="mb-5">
-    <h4 class="fw-bold mb-3 text-dark">🏪 المحلات المطابقة للبحث:</h4>
-    <div class="row g-3">
-        {% for shop in shops %}
-        <div class="col-md-4">
-            <div class="card h-100 shadow-sm border-0 card-hover">
-                <div class="card-body d-flex flex-column p-3">
-                    <h5 class="card-title fw-bold text-primary mb-2">
-                        {{ shop.name_ar or shop.name_en or shop[1] }}
-                    </h5>
-                    <p class="card-text text-muted small flex-grow-1">
-                        {{ shop.technical_capacity or 'لا يوجد وصف متاح حالياً لهذا المحل.' }}
-                    </p>
-                    <div class="mt-auto pt-2">
-                        <a href="/shops/{{ shop.id if shop.id is defined else shop[0] }}" class="btn btn-outline-primary btn-sm w-100 fw-semibold">
-                            عرض التفاصيل والفروع ←
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
+{% if results is not none %}
+<div class="panel">
+  <div class="panel-head">
+    <h2>نتائج البحث عن «{{ q }}»</h2>
+    <span class="count">{{ results|length }}</span>
+  </div>
+  {% if results %}
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th>#</th><th>المحل</th><th>بالإنجليزية</th><th>السجل التجاري</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for s in results %}
+        <tr>
+          <td class="num">{{ s.id }}</td>
+          <td><a class="rowlink" href="/shops/{{ s.id }}">{{ s.name_ar }}</a></td>
+          <td class="mono">{{ s.name_en or '—' }}</td>
+          <td class="mono">{{ s.commercial_register or '—' }}</td>
+          <td class="actions"><a class="btn btn-sm" href="/shops/{{ s.id }}">عرض</a></td>
+        </tr>
         {% endfor %}
-    </div>
-</div>
-<hr class="my-4">
-{% endif %}
-
-<!-- 🏷️ قائمة الأقسام / الأنشطة -->
-{% if trades %}
-<div class="row g-4">
-    <div class="col-12">
-        <h4 class="fw-bold mb-1 text-dark">🏷️ الأقسام والأنشطة:</h4>
-    </div>
-    {% for trade in trades %}
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100 shadow-sm border-0 card-hover">
-            <div class="card-body d-flex flex-column text-center p-4">
-                <!-- اسم القسم -->
-                <h5 class="card-title fw-bold text-primary mb-3">
-                    📁 {{ trade.name_ar or trade.name_en or trade[1] }}
-                </h5>
-                
-                <!-- وصف (إن وجد) -->
-                {% if trade.description or (trade[2] is defined and trade[2]) %}
-                <p class="card-text text-secondary flex-grow-1">
-                    {{ trade.description or trade[2] }}
-                </p>
-                {% endif %}
-                
-                <!-- زر عرض المحلات -->
-                <div class="mt-auto pt-3">
-                    <a href="/trades/{{ trade.id if trade.id is defined else (trade['id'] if trade['id'] is defined else trade[0]) }}" class="btn btn-outline-primary w-100 fw-semibold">
-                        عرض المحلات التابعة للقسم ←
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty"><p>لا توجد نتائج مطابقة.</p></div>
+  {% endif %}
 </div>
 {% endif %}
 
-<!-- حالة عدم وجود نتائج (لا أقسام ولا محلات) -->
-{% if not trades and not shops %}
-<div class="row">
-    <div class="col-12 text-center py-5">
-        <p class="text-muted fs-5">لا توجد نتائج تطابق بحثك.</p>
-        <a href="/" class="btn btn-outline-primary btn-sm mt-2">عرض كل الأقسام</a>
-    </div>
+<div class="panel">
+  <div class="panel-head">
+    <h2>الأقسام</h2>
+    <a href="/trades" class="btn btn-sm">إدارة الأقسام</a>
+  </div>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th>#</th><th>القسم</th><th>بالإنجليزية</th><th>عدد المحلات</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for t in trades %}
+        <tr>
+          <td class="num">{{ t.id }}</td>
+          <td><a class="rowlink" href="/trades/{{ t.id }}">{{ t.name_ar }}</a></td>
+          <td class="mono">{{ t.name_en }}</td>
+          <td><span class="count">{{ t.shop_count }}</span></td>
+          <td class="actions"><a class="btn btn-sm" href="/trades/{{ t.id }}">عرض المحلات</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
-{% endif %}
-
 {% endblock %}

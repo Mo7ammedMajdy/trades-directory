@@ -1,0 +1,61 @@
+### 1. Structure — the five tables
+            List of tables
+ Schema |    Name    | Type  |  Owner  
+--------+------------+-------+---------
+ public | branch     | table | mohamed
+ public | employee   | table | mohamed
+ public | shop       | table | mohamed
+ public | shop_trade | table | mohamed
+ public | trade      | table | mohamed
+(5 rows)
+
+
+### 2. One table in full, with every constraint
+                                      Table "public.branch"
+    Column    |         Type          | Collation | Nullable |              Default               
+--------------+-----------------------+-----------+----------+------------------------------------
+ id           | integer               |           | not null | nextval('branch_id_seq'::regclass)
+ shop_id      | integer               |           | not null | 
+ address      | text                  |           | not null | 
+ branch_name  | text                  |           |          | 
+ phone_number | character varying(15) |           | not null | 
+Indexes:
+    "branch_pkey" PRIMARY KEY, btree (id)
+Check constraints:
+    "branch_phone_number_check" CHECK (phone_number::text ~ '^\+?[0-9]{7,15}$'::text)
+Foreign-key constraints:
+    "branch_shop_id_fkey" FOREIGN KEY (shop_id) REFERENCES shop(id) ON DELETE CASCADE
+Referenced by:
+    TABLE "employee" CONSTRAINT "employee_branch_id_fkey" FOREIGN KEY (branch_id) REFERENCES branch(id) ON DELETE CASCADE
+
+
+### 3. Row counts
+ trade | shop | shop_trade | branch | employee 
+-------+------+------------+--------+----------
+     7 |    8 |         10 |     13 |       17
+(1 row)
+
+
+### 4. The constraint refusing bad data
+ERROR:  duplicate key value violates unique constraint "trade_name_en_key"
+DETAIL:  Key (name_en)=(Plumbing) already exists.
+ERROR:  new row for relation "branch" violates check constraint "branch_phone_number_check"
+DETAIL:  Failing row contains (14, 1, x, null, not-a-phone).
+ERROR:  insert or update on table "branch" violates foreign key constraint "branch_shop_id_fkey"
+DETAIL:  Key (shop_id)=(999) is not present in table "shop".
+
+### 5. The join that assembles one answer from three tables
+         shop          |       trade       
+-----------------------+-------------------
+ Al-Nour Plumbing      | Plumbing
+ Al-Herafy Carpentry   | Carpentry
+ Al-Shorouk Electrical | Electrical
+ Al-Mohandes Motors    | Mechanical
+ Al-Amana Metalwork    | Metalwork
+                       | Domestic Services
+ Al-Fannan Painting    | Painting
+ Al-Itqan Maintenance  | Plumbing
+ Al-Itqan Maintenance  | Electrical
+ Al-Itqan Maintenance  | Metalwork
+(10 rows)
+

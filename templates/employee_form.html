@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% set nav = 'shops' %}
+{% block title %}{% if employee %}تعديل عامل{% else %}عامل جديد{% endif %}{% endblock %}
+
+{% block content %}
+<p class="crumb"><a href="/shops">المحلات</a> ›
+  <a href="/shops/{{ branch.shop_id }}">{{ branch.shop_name }}</a> ›
+  {{ branch.branch_name or 'فرع بدون اسم' }} ›
+  {% if employee %}تعديل عامل{% else %}عامل جديد{% endif %}</p>
+
+<div class="page-head">
+  <div>
+    <h1>{% if employee %}تعديل عامل{% else %}عامل جديد{% endif %}</h1>
+    <p class="sub">{{ branch.branch_name or 'فرع بدون اسم' }} — {{ branch.address }}</p>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-body">
+    <form class="form" method="post"
+          action="{% if employee %}/employees/{{ employee.id }}/edit{% else %}/branches/{{ branch.id }}/employees/new{% endif %}">
+
+      <div class="field">
+        <label for="name_ar">الاسم بالعربية <span class="req">*</span></label>
+        <input id="name_ar" name="name_ar" type="text" required
+               value="{{ form.name_ar or '' }}" placeholder="مثال: محمد عبد الرحمن">
+      </div>
+
+      <div class="field">
+        <label for="name_en">الاسم بالإنجليزية</label>
+        <input id="name_en" name="name_en" type="text" class="mono-input"
+               value="{{ form.name_en or '' }}" placeholder="Mohamed Abdelrahman">
+      </div>
+
+      <div class="field">
+        <label for="national_id">الرقم القومي</label>
+        <input id="national_id" name="national_id" type="text" class="mono-input"
+               value="{{ form.national_id or '' }}" placeholder="28505121201234"
+               inputmode="numeric" maxlength="14">
+        <span class="hint">اختياري، و‌14 رقماً بالضبط إن وُجد. لا يتكرر بين عاملين.</span>
+      </div>
+
+      <div class="field">
+        <label for="phone_number">رقم الهاتف <span class="req">*</span></label>
+        <input id="phone_number" name="phone_number" type="tel" required class="mono-input"
+               value="{{ form.phone_number or '' }}" placeholder="01001111001">
+        <span class="hint">من 7 إلى 15 رقماً.</span>
+      </div>
+
+      <div class="btn-row">
+        <button type="submit" class="btn btn-primary">
+          {% if employee %}حفظ التعديلات{% else %}إضافة العامل{% endif %}
+        </button>
+        <a class="btn" href="/shops/{{ branch.shop_id }}">إلغاء</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

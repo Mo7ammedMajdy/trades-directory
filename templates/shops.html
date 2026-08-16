@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% set nav = 'shops' %}
+{% block title %}المحلات{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>المحلات</h1>
+    <p class="sub">كل المحلات والحرفيين المسجلين في الدليل</p>
+  </div>
+  <a href="/shops/new" class="btn btn-primary">إضافة محل</a>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>كل المحلات</h2>
+    <span class="count">{{ shops|length }}</span>
+  </div>
+  {% if shops %}
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr>
+          <th>#</th><th>المحل</th><th>بالإنجليزية</th><th>السجل التجاري</th>
+          <th>الأقسام</th><th>الفروع</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in shops %}
+        <tr>
+          <td class="num">{{ s.id }}</td>
+          <td><a class="rowlink" href="/shops/{{ s.id }}">{{ s.name_ar }}</a></td>
+          <td class="mono">{{ s.name_en or '—' }}</td>
+          <td class="mono">{{ s.commercial_register or '—' }}</td>
+          <td><span class="count">{{ s.trade_count }}</span></td>
+          <td><span class="count">{{ s.branch_count }}</span></td>
+          <td class="actions">
+            <a class="btn-link" href="/shops/{{ s.id }}/edit">تعديل</a>
+            <form class="inline" method="post" action="/shops/{{ s.id }}/delete"
+                  onsubmit="return confirm('حذف «{{ s.name_ar }}»؟ سيُحذف معه {{ s.branch_count }} فرع وكل العاملين بها. لا يمكن التراجع.');">
+              <button type="submit" class="btn-link danger">حذف</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">
+    <p>لا توجد محلات بعد.</p>
+    <a href="/shops/new" class="btn btn-primary">إضافة أول محل</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

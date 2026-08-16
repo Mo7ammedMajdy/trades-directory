@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% set nav = 'trades' %}
+{% block title %}{% if trade %}تعديل قسم{% else %}قسم جديد{% endif %}{% endblock %}
+
+{% block content %}
+<p class="crumb"><a href="/trades">الأقسام</a> ›
+  {% if trade %}{{ trade.name_ar }} › تعديل{% else %}قسم جديد{% endif %}</p>
+
+<div class="page-head">
+  <div>
+    <h1>{% if trade %}تعديل قسم{% else %}قسم جديد{% endif %}</h1>
+    <p class="sub">اسم القسم مطلوب بالعربية والإنجليزية، ولا يتكرر</p>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-body">
+    <form class="form" method="post"
+          action="{% if trade %}/trades/{{ trade.id }}/edit{% else %}/trades/new{% endif %}">
+      <div class="field">
+        <label for="name_ar">الاسم بالعربية <span class="req">*</span></label>
+        <input id="name_ar" name="name_ar" type="text" required
+               value="{{ form.name_ar or '' }}" placeholder="مثال: السباكة">
+      </div>
+      <div class="field">
+        <label for="name_en">الاسم بالإنجليزية <span class="req">*</span></label>
+        <input id="name_en" name="name_en" type="text" required class="mono-input"
+               value="{{ form.name_en or '' }}" placeholder="Plumbing">
+      </div>
+      <div class="btn-row">
+        <button type="submit" class="btn btn-primary">
+          {% if trade %}حفظ التعديلات{% else %}إضافة القسم{% endif %}
+        </button>
+        <a class="btn" href="{% if trade %}/trades/{{ trade.id }}{% else %}/trades{% endif %}">إلغاء</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

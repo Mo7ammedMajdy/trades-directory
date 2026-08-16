@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% set nav = 'shops' %}
+{% block title %}{% if shop %}تعديل محل{% else %}محل جديد{% endif %}{% endblock %}
+
+{% block content %}
+<p class="crumb"><a href="/shops">المحلات</a> ›
+  {% if shop %}<a href="/shops/{{ shop.id }}">{{ shop.name_ar }}</a> › تعديل{% else %}محل جديد{% endif %}</p>
+
+<div class="page-head">
+  <div>
+    <h1>{% if shop %}تعديل محل{% else %}محل جديد{% endif %}</h1>
+    <p class="sub">
+      {% if shop %}الأقسام تُدار من صفحة المحل بعد الحفظ
+      {% else %}الاسم بالعربية والقسم مطلوبان. باقي الحقول اختيارية{% endif %}
+    </p>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-body">
+    <form class="form" method="post"
+          action="{% if shop %}/shops/{{ shop.id }}/edit{% else %}/shops/new{% endif %}">
+
+      <div class="field">
+        <label for="name_ar">اسم المحل بالعربية <span class="req">*</span></label>
+        <input id="name_ar" name="name_ar" type="text" required
+               value="{{ form.name_ar or '' }}" placeholder="مثال: مؤسسة النور للسباكة">
+      </div>
+
+      <div class="field">
+        <label for="name_en">اسم المحل بالإنجليزية</label>
+        <input id="name_en" name="name_en" type="text" class="mono-input"
+               value="{{ form.name_en or '' }}" placeholder="Al-Nour Plumbing">
+      </div>
+
+      <div class="field">
+        <label for="commercial_register">السجل التجاري</label>
+        <input id="commercial_register" name="commercial_register" type="text" class="mono-input"
+               value="{{ form.commercial_register or '' }}" placeholder="45219">
+        <span class="hint">اتركه فارغاً للحرفيين غير المسجلين. لا يتكرر بين محلين.</span>
+      </div>
+
+      <div class="field">
+        <label for="bank_account">الحساب البنكي</label>
+        <input id="bank_account" name="bank_account" type="text" class="mono-input"
+               value="{{ form.bank_account or '' }}" placeholder="1002334577891">
+      </div>
+
+      <div class="field">
+        <label for="technical_capacity">القدرة الفنية</label>
+        <input id="technical_capacity" name="technical_capacity" type="text"
+               value="{{ form.technical_capacity or '' }}"
+               placeholder="مثال: 3 فنيين وسيارة نقل">
+      </div>
+
+      {% if not shop %}
+      <div class="field">
+        <label>الأقسام <span class="req">*</span></label>
+        <div class="checks">
+          {% for t in trades %}
+          <label class="check">
+            <input type="checkbox" name="trade_ids" value="{{ t.id }}"
+                   {% if t.id in selected %}checked{% endif %}>
+            {{ t.name_ar }}
+          </label>
+          {% endfor %}
+        </div>
+        <span class="hint">يمكن اختيار أكثر من قسم — شركة الصيانة المتكاملة تعمل في السباكة والكهرباء والحدادة معاً.</span>
+      </div>
+      {% endif %}
+
+      <div class="btn-row">
+        <button type="submit" class="btn btn-primary">
+          {% if shop %}حفظ التعديلات{% else %}إضافة المحل{% endif %}
+        </button>
+        <a class="btn" href="{% if shop %}/shops/{{ shop.id }}{% else %}/shops{% endif %}">إلغاء</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
