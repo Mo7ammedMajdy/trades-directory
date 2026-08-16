@@ -98,12 +98,48 @@ def shop_details(request: Request, shop_id: int):
     shop = shop_data[0]
 
     trades = query("SELECT t.* FROM trade t JOIN shop_trade st ON t.id = st.trade_id WHERE st.shop_id = %s;", (shop_id,))
-    branches = query("SELECT * FROM branch WHERE shop_id = %s;", (shop_id,))
+
+    # LEFT JOIN, not JOIN: a branch with no employees recorded must still appear,
+    # with a count of 0. An inner join would silently hide it.
+    branches = query(
+        """
+        SELECT b.id, b.branch_name, b.address, b.phone_number,
+               count(e.id) AS staff_count
+        FROM branch b
+        LEFT JOIN employee e ON e.branch_id = b.id
+        WHERE b.shop_id = %s
+        GROUP BY b.id, b.branch_name, b.address, b.phone_number
+        ORDER BY b.id;
+        """,
+        (shop_id,),
+    )
+
+    # Every employee across this shop's branches, keyed by branch id so the
+    # template can list them under the right one.
+    employee_rows = query(
+        """
+        SELECT e.id, e.name_ar, e.name_en, e.national_id, e.phone_number,
+               e.branch_id
+        FROM employee e
+        JOIN branch b ON b.id = e.branch_id
+        WHERE b.shop_id = %s
+        ORDER BY e.branch_id, e.id;
+        """,
+        (shop_id,),
+    )
+    employees_by_branch = {}
+    for row in employee_rows:
+        employees_by_branch.setdefault(row["branch_id"], []).append(row)
 
     return templates.TemplateResponse(
         request=request,
         name="shop.html",
-        context={"shop": shop, "trades": trades, "branches": branches}
+        context={
+            "shop": shop,
+            "trades": trades,
+            "branches": branches,
+            "employees_by_branch": employees_by_branch,
+        },
     )
 
 @app.get("/add-shop")

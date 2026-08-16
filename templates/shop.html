@@ -37,9 +37,35 @@
         <div class="col-md-6">
             <div class="card h-100 border">
                 <div class="card-body">
-                    <h5 class="card-title fw-bold">{{ branch.branch_name or 'فرع الرئيسي' }}</h5>
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title fw-bold mb-0">{{ branch.branch_name or 'فرع الرئيسي' }}</h5>
+                        <span class="badge bg-secondary">{{ branch.staff_count }} عامل</span>
+                    </div>
                     <p class="card-text mb-1"><strong>العنوان:</strong> {{ branch.address }}</p>
-                    <p class="card-text"><strong>الهاتف:</strong> {{ branch.phone_number or 'غير متوفر' }}</p>
+                    <p class="card-text mb-0"><strong>الهاتف:</strong> {{ branch.phone_number or 'غير متوفر' }}</p>
+
+                    {% set staff = employees_by_branch.get(branch.id, []) %}
+                    {% if staff %}
+                    <hr class="my-3">
+                    <h6 class="fw-bold mb-2">👷 العاملون بالفرع</h6>
+                    <ul class="list-group list-group-flush">
+                        {% for e in staff %}
+                        <li class="list-group-item px-0 py-2">
+                            <div class="fw-semibold">{{ e.name_ar }}</div>
+                            <small class="text-muted d-block">
+                                {% if e.name_en %}{{ e.name_en }} — {% endif %}
+                                هاتف: {{ e.phone_number }}
+                            </small>
+                            <small class="text-muted d-block">
+                                الرقم القومي: {{ e.national_id or 'غير مسجل' }}
+                            </small>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <hr class="my-3">
+                    <p class="text-muted small mb-0">لا يوجد عاملون مسجلون بهذا الفرع.</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
