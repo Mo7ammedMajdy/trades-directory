@@ -30,6 +30,10 @@ default, and the rest of the setup fails without it.
 
 Double-click **`setup-windows.bat`**.
 
+*(In PowerShell you can run `.\setup-windows.ps1` directly instead. The `.bat`
+is just a launcher for it — it exists because double-clicking a `.ps1` is
+blocked by Windows.)*
+
 It asks for the PostgreSQL password from step 1, then creates the database,
 loads the tables and the sample data, and installs what the application needs.
 It checks each step and stops with a plain explanation if something is wrong.
@@ -42,7 +46,7 @@ trades=7  shops=8  branches=13  employees=17
 
 ## 4. Run it
 
-Double-click **`run-windows.bat`**.
+Double-click **`run-windows.bat`** (or `.\run-windows.ps1` in PowerShell).
 
 Your browser opens at <http://127.0.0.1:8000>. Leave the black window open
 while you use the site; closing it stops the server.
@@ -91,6 +95,8 @@ Windows Terminal instead of the old Command Prompt.
 | `Could not recreate the database` | Close pgAdmin and any open psql window, then run setup again. |
 | Port 8000 already in use | Something else is using it. Edit `run-windows.bat` and change `8000` to `8001`. |
 | The page looks unstyled | Press **Ctrl+Shift+R** in the browser. |
+| Arabic rows fail with `WIN1252` | The console is not in UTF-8. Use Windows Terminal, or run the `.bat` rather than typing commands by hand. |
+| `running scripts is disabled on this system` | You ran the `.ps1` directly. Use the `.bat`, or `powershell -ExecutionPolicy Bypass -File setup-windows.ps1`. |
 
 **To start over completely**, run `setup-windows.bat` again — it rebuilds the
 database from scratch and reloads the original sample data.
