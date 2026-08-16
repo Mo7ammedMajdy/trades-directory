@@ -154,8 +154,13 @@ body {
 /* --- tables ------------------------------------------------------------ */
 .table-wrap { overflow-x: auto; }
 table.data { width: 100%; border-collapse: collapse; font-size: 0.93rem; }
+/* Physical `right`, not logical `start`. Identifier cells carry
+   `direction: ltr` so their Latin text and digits order correctly, and under
+   that direction `start` resolves to the left edge — which pulled the values
+   away from their right-aligned Arabic headers. Naming the edge explicitly
+   keeps every column on one line. */
 table.data th, table.data td {
-  text-align: start;
+  text-align: right;
   padding: var(--sp-3) var(--sp-4);
   border-bottom: 1px solid var(--rule);
   vertical-align: middle;
@@ -172,7 +177,7 @@ table.data thead th {
 }
 table.data tbody tr:last-child td { border-bottom: none; }
 table.data tbody tr:hover { background: #fbfbf9; }
-table.data td.actions { text-align: end; white-space: nowrap; width: 1%; }
+table.data td.actions { text-align: left; white-space: nowrap; width: 1%; }
 table.data a.rowlink { color: var(--ink); text-decoration: none; font-weight: 500; }
 table.data a.rowlink:hover { color: var(--accent); text-decoration: underline; }
 
