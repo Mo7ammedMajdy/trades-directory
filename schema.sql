@@ -1,3 +1,4 @@
+\encoding UTF8
 CREATE TABLE trade(
     id                      SERIAL PRIMARY KEY,
     name_en                 TEXT NOT NULL UNIQUE,

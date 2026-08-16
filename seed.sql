@@ -1,3 +1,4 @@
+\encoding UTF8
 INSERT INTO trade(name_en,name_ar) VALUES
 ('Plumbing','السباكة'),
 ('Carpentry','النجارة'),

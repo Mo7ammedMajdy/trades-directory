@@ -11,6 +11,11 @@ REM ===========================================================================
 
 chcp 65001 >nul
 setlocal enabledelayedexpansion
+
+REM  psql on Windows defaults its client encoding to the console
+REM  code page (WIN1252), which cannot represent Arabic. Without
+REM  this, every row containing Arabic is rejected.
+set "PGCLIENTENCODING=UTF8"
 cd /d "%~dp0"
 
 echo.
@@ -143,11 +148,11 @@ if %errorlevel%==0 (
 REM --- load structure and data -----------------------------------------------
 echo.
 echo  Loading tables...
-"!PSQL!" -U postgres -d trades_db -q -f schema.sql
+"!PSQL!" -U postgres -d trades_db -q -v ON_ERROR_STOP=1 -f schema.sql
 if not %errorlevel%==0 goto :load_failed
 
 echo  Loading sample data...
-"!PSQL!" -U postgres -d trades_db -q -f seed.sql
+"!PSQL!" -U postgres -d trades_db -q -v ON_ERROR_STOP=1 -f seed.sql
 if not %errorlevel%==0 goto :load_failed
 
 echo  [OK] Database loaded
@@ -179,12 +184,24 @@ echo.
 echo  Checking the data...
 "!PSQL!" -U postgres -d trades_db -t -c "SELECT 'trades=' || (SELECT count(*) FROM trade) || '  shops=' || (SELECT count(*) FROM shop) || '  branches=' || (SELECT count(*) FROM branch) || '  employees=' || (SELECT count(*) FROM employee);"
 
+REM  Assert it, rather than trusting the reader to compare numbers.
+for /f "tokens=*" %%C in ('""!PSQL!" -U postgres -d trades_db -t -A -c "SELECT count(*) FROM shop;""') do set "SHOPCOUNT=%%C"
+if not "!SHOPCOUNT!"=="8" (
+    echo.
+    echo  [X] The data did not load correctly - expected 8 shops, found !SHOPCOUNT!.
+    echo      Scroll up: the first error explains why. If it mentions WIN1252
+    echo      or encoding, the console is not in UTF-8 - run this from Windows
+    echo      Terminal rather than the old Command Prompt.
+    echo.
+    pause
+    exit /b 1
+)
+
 echo.
 echo  ============================================
 echo   Setup complete.
 echo.
-echo   Expected above: trades=7  shops=8
-echo                   branches=13  employees=17
+echo   trades=7  shops=8  branches=13  employees=17
 echo.
 echo   Now double-click:  run-windows.bat
 echo  ============================================
