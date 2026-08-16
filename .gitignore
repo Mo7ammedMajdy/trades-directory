@@ -5,3 +5,4 @@ venv/
 .env
 *.log
 2026-*-for-some-reason*.txt
+local-db.bat
